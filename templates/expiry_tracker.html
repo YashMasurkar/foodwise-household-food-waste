@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Expiry Tracker - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-hourglass-split me-2"></i> Expiry Tracker & Alerts</h1>
+                <p>Automated timeline tracking to prioritize older stock and prevent avoidable spoilage.</p>
+            </div>
+            <a href="{{ url_for('inventory') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                <i class="bi bi-boxes me-1"></i> View Full Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Expiry Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card border-danger">
+                <div class="stat-icon bg-expired-light"><i class="bi bi-x-octagon"></i></div>
+                <div class="stat-value text-danger">{{ expired_items|length }}</div>
+                <div class="stat-label">Expired Items</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card border-warning">
+                <div class="stat-icon bg-today-light"><i class="bi bi-alarm"></i></div>
+                <div class="stat-value text-warning">{{ today_items|length }}</div>
+                <div class="stat-label">Expiring Today</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card border-warning">
+                <div class="stat-icon bg-expiring-light"><i class="bi bi-clock-history"></i></div>
+                <div class="stat-value text-warning">{{ soon_items|length }}</div>
+                <div class="stat-label">Expiring Soon (1–3d)</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card border-success">
+                <div class="stat-icon bg-fresh-light"><i class="bi bi-check2-circle"></i></div>
+                <div class="stat-value text-success">{{ fresh_items|length }}</div>
+                <div class="stat-label">Fresh (> 3 Days)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expiry Status Filter Tabs -->
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded-3 border shadow-sm" id="expiryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="all-tab" data-bs-toggle="pill" data-bs-target="#tab-all" type="button" role="tab">
+                All Tracked Items ({{ all_items|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-warning fw-bold" id="urgent-tab" data-bs-toggle="pill" data-bs-target="#tab-urgent" type="button" role="tab">
+                <i class="bi bi-exclamation-triangle me-1"></i> Action Needed ({{ (soon_items|length) + (today_items|length) + (expired_items|length) }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-danger fw-bold" id="expired-tab" data-bs-toggle="pill" data-bs-target="#tab-expired" type="button" role="tab">
+                Expired ({{ expired_items|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-success fw-bold" id="fresh-tab" data-bs-toggle="pill" data-bs-target="#tab-fresh" type="button" role="tab">
+                Fresh ({{ fresh_items|length }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="expiryTabsContent">
+        <!-- Tab 1: All Tracked Items -->
+        <div class="tab-pane fade show active" id="tab-all" role="tabpanel">
+            {% include "partials/expiry_table.html" with context %}
+        </div>
+
+        <!-- Tab 2: Action Needed (Soon + Today + Expired) -->
+        <div class="tab-pane fade" id="tab-urgent" role="tabpanel">
+            {% set items_subset = (expired_items + today_items + soon_items) %}
+            {% if items_subset %}
+                <div class="card-custom">
+                    <div class="card-custom-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Food Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Expiry Date</th>
+                                        <th>Urgency Status</th>
+                                        <th class="text-end">Recommended Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items_subset %}
+                                    <tr>
+                                        <td><strong>{{ item.name }}</strong></td>
+                                        <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                                        <td><strong>{{ item.expiry_date }}</strong></td>
+                                        <td>
+                                            {% if item.days_left < 0 %}
+                                                <span class="badge-status badge-expired"><i class="bi bi-x-circle"></i> Expired {{ -item.days_left }}d ago</span>
+                                            {% elif item.days_left == 0 %}
+                                                <span class="badge-status badge-expiring-today"><i class="bi bi-exclamation-circle"></i> Expiring Today</span>
+                                            {% else %}
+                                                <span class="badge-status badge-expiring-soon"><i class="bi bi-clock-history"></i> In {{ item.days_left }} day{% if item.days_left > 1 %}s{% endif %}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if item.days_left >= 0 %}
+                                                <a href="{{ url_for('meal_planner') }}" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-calendar-plus me-1"></i> Add to Meal Plan
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('waste_tracking') }}?prefill_name={{ item.name|urlencode }}&prefill_cat={{ item.category|urlencode }}&prefill_qty={{ item.quantity }}&prefill_unit={{ item.unit|urlencode }}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash3 me-1"></i> Log as Waste
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card-custom p-5 text-center bg-white">
+                    <i class="bi bi-check-circle-fill text-success fs-1 mb-2"></i>
+                    <h5>No Urgent Expiry Actions Needed</h5>
+                    <p class="text-muted mb-0">All items are either fresh or no inventory has been added.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Tab 3: Expired Items Only -->
+        <div class="tab-pane fade" id="tab-expired" role="tabpanel">
+            {% if expired_items %}
+                <div class="card-custom">
+                    <div class="card-custom-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Food Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Expired Date</th>
+                                        <th>Days Past Expiry</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in expired_items %}
+                                    <tr>
+                                        <td><strong>{{ item.name }}</strong></td>
+                                        <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                                        <td>{{ item.expiry_date }}</td>
+                                        <td><span class="badge-status badge-expired">{{ -item.days_left }} days past expiry</span></td>
+                                        <td class="text-end">
+                                            <a href="{{ url_for('waste_tracking') }}?prefill_name={{ item.name|urlencode }}&prefill_cat={{ item.category|urlencode }}&prefill_qty={{ item.quantity }}&prefill_unit={{ item.unit|urlencode }}" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash3 me-1"></i> Log in Waste Tracker
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card-custom p-5 text-center bg-white">
+                    <i class="bi bi-emoji-smile text-success fs-1 mb-2"></i>
+                    <h5>Zero Expired Food Items!</h5>
+                    <p class="text-muted mb-0">Great job! There are currently no expired items in your inventory.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Tab 4: Fresh Items Only -->
+        <div class="tab-pane fade" id="tab-fresh" role="tabpanel">
+            {% if fresh_items %}
+                <div class="card-custom">
+                    <div class="card-custom-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Food Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Expiry Date</th>
+                                        <th>Remaining Days</th>
+                                        <th>Storage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in fresh_items %}
+                                    <tr>
+                                        <td><strong>{{ item.name }}</strong></td>
+                                        <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                                        <td>{{ item.expiry_date }}</td>
+                                        <td><span class="badge-status badge-fresh"><i class="bi bi-check-circle"></i> {{ item.days_left }} days</span></td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary">{{ item.storage_type }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card-custom p-5 text-center bg-white">
+                    <i class="bi bi-inbox text-muted fs-1 mb-2"></i>
+                    <h5>No Fresh Items Found</h5>
+                    <p class="text-muted mb-0">Add new items in the inventory module to monitor their shelf life.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

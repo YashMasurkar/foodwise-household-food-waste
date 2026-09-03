@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}About Project - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-info-circle me-2"></i> About Community Engagement Project (CEP)</h1>
+                <p>Academic project specification, research objectives, methodology, system architecture, and project scope.</p>
+            </div>
+            <a href="{{ url_for('survey_results') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                <i class="bi bi-pie-chart-fill me-1"></i> View Survey Analytics
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Project Overview Card -->
+    <div class="card-custom p-4 bg-white mb-4 border-start border-4 border-success">
+        <div class="row g-3 align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-success mb-2">B.Sc. Computer Science &bull; CEP</span>
+                <h4 class="fw-bold mb-1">Digital Food Waste Reduction and Awareness System for Households</h4>
+                <p class="text-muted small mb-0">
+                    <strong>Project Topic:</strong> Food Waste Reduction in Households &bull; <strong>Purpose:</strong> To study household food-waste practices and provide a digital solution for reducing avoidable food waste.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="p-2 px-3 bg-light rounded-3 border d-inline-block text-start small">
+                    <div><strong>Course:</strong> B.Sc. Computer Science</div>
+                    <div><strong>Project Type:</strong> Community Engagement (CEP)</div>
+                    <div><strong>Methodology:</strong> Survey & Software Intervention</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Background & Problem Statement -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100 p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-exclamation-octagon text-danger me-2"></i> Problem Statement</h5>
+                <p class="text-secondary small leading-relaxed">
+                    Household food waste accounts for a significant portion of municipal organic waste. Due to fast-paced lifestyles, lack of inventory visibility, uncoordinated grocery purchasing, and poor leftover tracking, families frequently discard edible food. This results in unnecessary household financial loss and generates landfill greenhouse gas emissions.
+                </p>
+                <h6 class="fw-bold text-dark mt-4 mb-2"><i class="bi bi-bullseye text-primary me-2"></i> Project Objectives</h6>
+                <ul class="text-secondary small d-flex flex-column gap-2 mb-0">
+                    <li>Analyze food-waste habits across a target group of 10–20 real households using Google Forms.</li>
+                    <li>Develop a user-friendly digital application for active food inventory, expiry tracking, meal planning, and leftover logging.</li>
+                    <li>Raise community awareness regarding proper food storage, FIFO principles, and responsible consumption.</li>
+                    <li>Quantify waste discards and provide dynamic analytical feedback to users.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Methodology & Community Engagement -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100 p-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-diagram-3 text-success me-2"></i> Research Methodology</h5>
+                <ol class="text-secondary small d-flex flex-column gap-2 mb-4">
+                    <li><strong>Field Survey:</strong> Conduct an anonymous, structured 17-question survey with 10–20 households via Google Forms.</li>
+                    <li><strong>Data Entry & Aggregation:</strong> Securely enter real responses into SQLite and compute live statistics and dynamic interpretations.</li>
+                    <li><strong>Software Development:</strong> Build an intuitive Flask web application adhering to strict data integrity standards.</li>
+                    <li><strong>Community Engagement:</strong> Share awareness guides and demonstrate software utility to participants.</li>
+                </ol>
+
+                <h6 class="fw-bold text-dark mb-2"><i class="bi bi-check-circle text-success me-2"></i> Expected Outcomes</h6>
+                <ul class="text-secondary small d-flex flex-column gap-1 mb-0">
+                    <li>Greater awareness of expiry timelines and inventory rotation in participating homes.</li>
+                    <li>Practical reduction in preventable grocery discards and financial expenditure.</li>
+                    <li>Empirically backed insights regarding primary drivers of domestic food waste.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scope, Limitations & Future Scope -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card-custom p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-shield-slash text-warning me-2"></i> Study Limitations</h5>
+                <ul class="text-secondary small d-flex flex-column gap-2 mb-0">
+                    <li><strong>Sample Size:</strong> The survey is conducted with an initial sample of 10–20 households, representing local exploratory findings rather than universal demographic patterns.</li>
+                    <li><strong>Self-Reported Estimates:</strong> Weight and monetary values are based on user estimations.</li>
+                    <li><strong>No Food Safety Guarantees:</strong> Leftover and expiry notifications serve as informational trackers and do not replace visual/sensory hygiene evaluations.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-custom p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-rocket-takeoff text-primary me-2"></i> Future Scope</h5>
+                <ul class="text-secondary small d-flex flex-column gap-2 mb-0">
+                    <li><strong>Barcode / Receipt Scanning:</strong> Integrating OCR and barcode scanning for automated receipt-to-inventory entry.</li>
+                    <li><strong>Push / SMS Notifications:</strong> Automated WhatsApp or email notifications for items expiring within 24 hours.</li>
+                    <li><strong>Community Food Sharing:</strong> Neighborhood peer-to-peer portal for surplus sealed food donation.</li>
+                    <li><strong>AI Recipe Generation:</strong> Dynamic recipe suggestions based exclusively on available expiring ingredients.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

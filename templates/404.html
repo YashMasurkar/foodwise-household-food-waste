@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found (404){% endblock %}
+
+{% block content %}
+<div class="container my-5 py-5 text-center">
+    <div class="card-custom p-5 mx-auto bg-white" style="max-width: 600px;">
+        <div class="display-1 fw-bold text-success mb-2">404</div>
+        <h4 class="fw-bold mb-3">Page Not Found</h4>
+        <p class="text-muted mb-4">
+            The requested page does not exist or may have been moved. Let's get you back on track to reducing food waste.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('index') }}" class="btn btn-primary-custom">
+                <i class="bi bi-house-door me-1"></i> Return Home
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-custom">
+                <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

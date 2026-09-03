@@ -1,0 +1,75 @@
+<div class="card-custom">
+    <div class="card-custom-body p-0">
+        {% if all_items %}
+        <div class="table-responsive">
+            <table class="table table-custom table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Food Item</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Storage</th>
+                        <th>Expiry Date</th>
+                        <th>Days Remaining</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in all_items %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                        <td>{{ item.quantity }} {{ item.unit }}</td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary">{{ item.storage_type }}</span>
+                        </td>
+                        <td>{{ item.expiry_date }}</td>
+                        <td>
+                            {% if item.days_left < 0 %}
+                                <span class="text-danger fw-bold">{{ -item.days_left }}d past</span>
+                            {% elif item.days_left == 0 %}
+                                <span class="text-warning fw-bold">Due today</span>
+                            {% else %}
+                                <span class="text-success fw-bold">{{ item.days_left }}d remaining</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.days_left < 0 %}
+                                <span class="badge-status badge-expired"><i class="bi bi-x-circle"></i> Expired</span>
+                            {% elif item.days_left == 0 %}
+                                <span class="badge-status badge-expiring-today"><i class="bi bi-exclamation-circle"></i> Expiring Today</span>
+                            {% elif item.days_left <= 3 %}
+                                <span class="badge-status badge-expiring-soon"><i class="bi bi-clock-history"></i> Expiring Soon</span>
+                            {% else %}
+                                <span class="badge-status badge-fresh"><i class="bi bi-check-circle"></i> Fresh</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if item.days_left < 0 %}
+                                <a href="{{ url_for('waste_tracking') }}?prefill_name={{ item.name|urlencode }}&prefill_cat={{ item.category|urlencode }}&prefill_qty={{ item.quantity }}&prefill_unit={{ item.unit|urlencode }}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash3 me-1"></i> Log Waste
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('meal_planner') }}" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-calendar-plus me-1"></i> Plan Meal
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon text-muted">
+                <i class="bi bi-calendar-x"></i>
+            </div>
+            <h5>No Tracked Items</h5>
+            <p>Add items to your inventory to track their expiry timelines.</p>
+            <a href="{{ url_for('inventory') }}" class="btn btn-primary-custom btn-sm">Go to Inventory</a>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Community Engagement Study - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-people-fill me-2"></i> Community Engagement Project Documentation</h1>
+                <p>Comprehensive academic documentation of the field study, household engagement, and digital intervention.</p>
+            </div>
+            <a href="{{ url_for('about') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                <i class="bi bi-info-circle me-1"></i> About CEP Project
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Quick Navigation Index -->
+    <div class="card-custom p-3 mb-4 bg-white">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between small">
+            <span class="fw-bold text-dark"><i class="bi bi-bookmark-fill text-success me-1"></i> Project Sections:</span>
+            <a href="#section-problem" class="text-secondary text-decoration-none">1. Problem Identified</a> &bull;
+            <a href="#section-activity" class="text-secondary text-decoration-none">2. Engagement Activity</a> &bull;
+            <a href="#section-methodology" class="text-secondary text-decoration-none">3. Survey Methodology</a> &bull;
+            <a href="#section-findings" class="text-secondary text-decoration-none">4. Findings</a> &bull;
+            <a href="#section-intervention" class="text-secondary text-decoration-none">5. Digital Solution</a> &bull;
+            <a href="#section-evaluation" class="text-secondary text-decoration-none">6. Before/After Impact</a>
+        </div>
+    </div>
+
+    <!-- Section 1: Problem Identified -->
+    <div class="card-custom mb-4" id="section-problem">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">1</span>
+                <h5 class="mb-0 fw-bold">Problem Identified in the Community</h5>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <p>
+                In urban and suburban households, substantial quantities of edible food are routinely discarded due to lack of systematic inventory visibility, forgotten expiry dates in refrigerators, over-preparation of cooked dishes, and inadequate meal scheduling.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <strong class="text-dark d-block mb-1"><i class="bi bi-cash-coin text-danger me-1"></i> Economic Leakage</strong>
+                        <p class="small text-muted mb-0">Households spend valuable income on groceries that are never eaten, directly increasing living costs.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <strong class="text-dark d-block mb-1"><i class="bi bi-trash text-warning me-1"></i> Landfill Methane</strong>
+                        <p class="small text-muted mb-0">Organic waste in anaerobic municipal landfills emits greenhouse gases, exacerbating local environmental degradation.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <strong class="text-dark d-block mb-1"><i class="bi bi-clock-history text-primary me-1"></i> Lack of Tools</strong>
+                        <p class="small text-muted mb-0">Most households rely purely on memory rather than digital tracking tools for kitchen management.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Community Engagement Activity -->
+    <div class="card-custom mb-4" id="section-activity">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">2</span>
+                <h5 class="mb-0 fw-bold">Community Engagement Activity & Protocol</h5>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <p>
+                As part of the B.Sc. Computer Science Community Engagement Project (CEP), student researchers actively engaged with approximately 10–20 local households. The engagement encompassed:
+            </p>
+            <ul class="text-secondary small d-flex flex-column gap-2 mb-3">
+                <li><strong>Initial Community Interaction:</strong> Explaining the purpose of the study to household members and distributing an anonymous Google Form questionnaire.</li>
+                <li><strong>Awareness Sharing:</strong> Disseminating practical guidelines on FIFO storage, refrigerator organization, and meal portioning.</li>
+                <li><strong>Digital Tool Demonstration:</strong> Demonstrating how a web-based inventory and expiry notification system helps prevent spoilage.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Section 3: Survey Methodology -->
+    <div class="card-custom mb-4" id="section-methodology">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">3</span>
+                <h5 class="mb-0 fw-bold">Survey Methodology & Ethical Standards</h5>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Data Collection Protocol</h6>
+                    <ul class="small text-muted">
+                        <li><strong>Official Instrument:</strong> Google Forms (17 standardized questions across 6 sections).</li>
+                        <li><strong>Target Sample:</strong> 10–20 real households within the target community.</li>
+                        <li><strong>Data Entry:</strong> Team members enter or batch-import verified collected responses into this web application.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Research Ethics & Integrity</h6>
+                    <ul class="small text-muted">
+                        <li><strong>Anonymity:</strong> No personally identifiable information (names, phone numbers, exact residential addresses) is collected.</li>
+                        <li><strong>Zero Fake Data:</strong> Strict adherence to authentic responses; no synthetic records are seeded in final evaluations.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Current Baseline Survey Findings -->
+    <div class="card-custom mb-4" id="section-findings">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">4</span>
+                <h5 class="mb-0 fw-bold">Baseline Survey Findings (Before Intervention)</h5>
+            </div>
+            <a href="{{ url_for('survey_results') }}" class="btn btn-outline-success btn-sm">View Live Analytics</a>
+        </div>
+        <div class="card-custom-body">
+            {% if total_survey_responses > 0 %}
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong class="text-success"><i class="bi bi-graph-up me-1"></i> Data from {{ total_survey_responses }} Surveyed Households:</strong>
+                        <span class="badge bg-success">{{ total_survey_responses }} Valid Entries</span>
+                    </div>
+                    <ul class="small text-secondary mb-0 d-flex flex-column gap-1">
+                        {% for finding in dynamic_findings %}
+                        <li>{{ finding }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-clipboard-data text-muted fs-2 mb-2 d-block"></i>
+                    <h6>No Baseline Survey Responses Recorded Yet</h6>
+                    <p class="small text-muted mb-0">Findings will populate dynamically once survey responses are entered via the Survey Data Entry module.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section 5: Digital Intervention -->
+    <div class="card-custom mb-4" id="section-intervention">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">5</span>
+                <h5 class="mb-0 fw-bold">The Digital Intervention Modules</h5>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white border rounded-3 h-100">
+                        <h6 class="fw-bold text-success mb-1"><i class="bi bi-boxes me-1"></i> Inventory & Expiry Tracker</h6>
+                        <p class="small text-muted mb-0">Maintains item visibility and highlights products needing consumption within 1–3 days.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white border rounded-3 h-100">
+                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-calendar-check me-1"></i> Weekly Meal Planner</h6>
+                        <p class="small text-muted mb-0">Connects recipes directly with items nearing expiration to prioritize existing stock.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white border rounded-3 h-100">
+                        <h6 class="fw-bold text-warning mb-1"><i class="bi bi-arrow-repeat me-1"></i> Leftovers & Waste Logger</h6>
+                        <p class="small text-muted mb-0">Tracks prepared leftovers and logs discarded items to quantify financial leakage.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Evaluation & Before vs After Impact -->
+    <div class="card-custom mb-4" id="section-evaluation">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success rounded-circle">6</span>
+                <h5 class="mb-0 fw-bold">Post-Intervention Evaluation & Impact Measurement</h5>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="p-4 bg-light rounded-3 border h-100">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-clock-history text-secondary me-1"></i> Baseline State (Before Digital Tool)</h6>
+                        <p class="small text-muted mb-2">
+                            Characterized by irregular expiry checks, unorganized grocery stock, frequent disposal of spoiled leftovers, and lack of waste quantification.
+                        </p>
+                        <span class="badge bg-secondary-subtle text-secondary">Captured via Google Form Survey</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-4 bg-light rounded-3 border h-100">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-check-all text-success me-1"></i> Post-Intervention State (After Adoption)</h6>
+                        <!-- Strict Data Integrity Rule -->
+                        <div class="alert alert-secondary py-3 px-3 mb-0 small" role="alert">
+                            <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                            <strong>Data Integrity Notice:</strong> Post-intervention evaluation data has not been entered yet. Measurable improvement percentages will be calculated after households utilize the system over the evaluation cycle.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

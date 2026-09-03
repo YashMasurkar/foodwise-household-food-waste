@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Data Entry & Import - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-clipboard-data me-2"></i> Official CEP Survey Data Entry & Import</h1>
+                <p>Data entry module for the project team to record real household responses collected from the official Google Form.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('survey_results') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                    <i class="bi bi-pie-chart-fill me-1"></i> View Live Survey Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Notice Banner -->
+    <div class="alert alert-info border-info shadow-sm mb-4 d-flex align-items-start gap-3" role="alert">
+        <i class="bi bi-info-circle-fill text-primary fs-3 mt-1"></i>
+        <div>
+            <h6 class="fw-bold mb-1">CEP Survey Protocol Notice</h6>
+            <p class="small mb-0">
+                The official household survey is distributed to 10–20 real households using Google Forms. This interface enables the project research team to enter or import collected real responses. <strong>No synthetic or fake records are inserted automatically.</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Mode Selector Tabs: Manual Entry vs CSV Import vs Entered Responses -->
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded-3 border shadow-sm" id="surveyAdminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="entry-tab" data-bs-toggle="pill" data-bs-target="#tab-entry" type="button" role="tab">
+                <i class="bi bi-pencil-square me-1"></i> Manual Questionnaire Entry
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="csv-tab" data-bs-toggle="pill" data-bs-target="#tab-csv" type="button" role="tab">
+                <i class="bi bi-filetype-csv me-1"></i> CSV Batch Import
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="records-tab" data-bs-toggle="pill" data-bs-target="#tab-records" type="button" role="tab">
+                <i class="bi bi-table me-1"></i> Entered Responses ({{ responses|length }})
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="surveyAdminTabsContent">
+        <!-- Tab 1: Manual 17-Question Entry Form -->
+        <div class="tab-pane fade show active" id="tab-entry" role="tabpanel">
+            <div class="card-custom">
+                <div class="card-custom-header bg-success text-white">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-card-checklist me-2"></i> Household Food Waste Survey — Data Entry Form</h5>
+                </div>
+                <div class="card-custom-body p-4">
+                    <form method="POST" action="{{ url_for('add_survey_response') }}">
+                        <!-- SECTION 1 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-1-circle-fill me-1"></i> Section 1: Basic Household Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q1">Q1. How many people live in your household? <span class="text-danger">*</span></label>
+                                    <select name="household_size" id="q1" class="form-select" required>
+                                        <option value="">Select Household Size</option>
+                                        <option value="1–2">1–2</option>
+                                        <option value="3–4">3–4</option>
+                                        <option value="5–6">5–6</option>
+                                        <option value="More than 6">More than 6</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q2">Q2. Who mainly manages food preparation in your household? <span class="text-danger">*</span></label>
+                                    <select name="food_manager" id="q2" class="form-select" required>
+                                        <option value="">Select Food Manager</option>
+                                        <option value="Self">Self</option>
+                                        <option value="Parent/Guardian">Parent/Guardian</option>
+                                        <option value="Spouse">Spouse</option>
+                                        <option value="Shared responsibility">Shared responsibility</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-2-circle-fill me-1"></i> Section 2: Food Waste Practices</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="q3">Q3. How often does food wastage occur? <span class="text-danger">*</span></label>
+                                    <select name="waste_frequency" id="q3" class="form-select" required>
+                                        <option value="">Select Frequency</option>
+                                        <option value="Daily">Daily</option>
+                                        <option value="Several times a week">Several times a week</option>
+                                        <option value="Once a week">Once a week</option>
+                                        <option value="Occasionally">Occasionally</option>
+                                        <option value="Rarely">Rarely</option>
+                                        <option value="Never">Never</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="q4">Q4. Approx. weekly wasted food quantity? <span class="text-danger">*</span></label>
+                                    <select name="weekly_waste_amount" id="q4" class="form-select" required>
+                                        <option value="">Select Quantity Range</option>
+                                        <option value="Less than 1 kg">Less than 1 kg</option>
+                                        <option value="1–2 kg">1–2 kg</option>
+                                        <option value="2–5 kg">2–5 kg</option>
+                                        <option value="More than 5 kg">More than 5 kg</option>
+                                        <option value="Not sure">Not sure</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="q5">Q5. Most commonly wasted food category? <span class="text-danger">*</span></label>
+                                    <select name="common_waste_category" id="q5" class="form-select" required>
+                                        <option value="">Select Category</option>
+                                        <option value="Cooked food">Cooked food</option>
+                                        <option value="Vegetables">Vegetables</option>
+                                        <option value="Fruits">Fruits</option>
+                                        <option value="Dairy">Dairy</option>
+                                        <option value="Bakery">Bakery</option>
+                                        <option value="Grains/Rice">Grains/Rice</option>
+                                        <option value="Meat/Eggs">Meat/Eggs</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label d-block">Q6. What are the reasons for food wastage in your household? (Select all selected in Form) <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        {% for reason in ['Cooking too much', 'Expiry', 'Spoilage', 'Leftovers not consumed', 'Excess purchasing', 'Improper storage', 'Change in preference', 'Other'] %}
+                                        <div class="col-sm-6 col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="waste_reasons" value="{{ reason }}" id="reason_{{ loop.index }}">
+                                                <label class="form-check-label small" for="reason_{{ loop.index }}">{{ reason }}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-3-circle-fill me-1"></i> Section 3: Food Management Practices</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q7">Q7. How often do you check food expiry dates? <span class="text-danger">*</span></label>
+                                    <select name="check_expiry_freq" id="q7" class="form-select" required>
+                                        <option value="">Select Frequency</option>
+                                        <option value="Always">Always</option>
+                                        <option value="Often">Often</option>
+                                        <option value="Sometimes">Sometimes</option>
+                                        <option value="Rarely">Rarely</option>
+                                        <option value="Never">Never</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q8">Q8. How often do you plan meals before cooking? <span class="text-danger">*</span></label>
+                                    <select name="meal_planning_freq" id="q8" class="form-select" required>
+                                        <option value="">Select Frequency</option>
+                                        <option value="Always">Always</option>
+                                        <option value="Often">Often</option>
+                                        <option value="Sometimes">Sometimes</option>
+                                        <option value="Rarely">Rarely</option>
+                                        <option value="Never">Never</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q9">Q9. What do you usually do with leftover food? <span class="text-danger">*</span></label>
+                                    <select name="leftover_practice" id="q9" class="form-select" required>
+                                        <option value="">Select Usual Practice</option>
+                                        <option value="Reuse it in another meal">Reuse it in another meal</option>
+                                        <option value="Store it for later">Store it for later</option>
+                                        <option value="Give it to someone">Give it to someone</option>
+                                        <option value="Dispose of it">Dispose of it</option>
+                                        <option value="Compost it">Compost it</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q10">Q10. Where do you usually store food items? <span class="text-danger">*</span></label>
+                                    <select name="storage_location" id="q10" class="form-select" required>
+                                        <option value="">Select Storage Habit</option>
+                                        <option value="Refrigerator">Refrigerator</option>
+                                        <option value="Freezer">Freezer</option>
+                                        <option value="Pantry">Pantry</option>
+                                        <option value="Room Temperature">Room Temperature</option>
+                                        <option value="Depends on the food item">Depends on the food item</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 4 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-4-circle-fill me-1"></i> Section 4: Awareness & Current Practices</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q11">Q11. Awareness of environmental & economic impact of food waste? <span class="text-danger">*</span></label>
+                                    <select name="impact_awareness" id="q11" class="form-select" required>
+                                        <option value="">Select Awareness Level</option>
+                                        <option value="Very aware">Very aware</option>
+                                        <option value="Somewhat aware">Somewhat aware</option>
+                                        <option value="Neutral">Neutral</option>
+                                        <option value="Slightly aware">Slightly aware</option>
+                                        <option value="Not aware">Not aware</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label d-block">Q12. Which practices do you currently use to reduce food waste? (Multiple) <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        {% for practice in ['Meal planning', 'Checking expiry dates', 'Buying only what is required', 'Proper food storage', 'Reusing leftovers', 'Composting', 'Donating suitable surplus', 'None of these'] %}
+                                        <div class="col-sm-6 col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="current_practices" value="{{ practice }}" id="practice_{{ loop.index }}">
+                                                <label class="form-check-label small" for="practice_{{ loop.index }}">{{ practice }}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 5 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-5-circle-fill me-1"></i> Section 5: Digital Solution Readiness</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q13">Q13. Would you use a digital application to reduce food waste? <span class="text-danger">*</span></label>
+                                    <select name="digital_tool_interest" id="q13" class="form-select" required>
+                                        <option value="">Select Interest</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="Maybe">Maybe</option>
+                                        <option value="No">No</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="q15">Q15. Problem you'd most like a digital tool to solve? <span class="text-danger">*</span></label>
+                                    <select name="biggest_problem_to_solve" id="q15" class="form-select" required>
+                                        <option value="">Select Main Challenge to Solve</option>
+                                        <option value="Forgetting expiry dates">Forgetting expiry dates</option>
+                                        <option value="Buying too much food">Buying too much food</option>
+                                        <option value="Cooking excess food">Cooking excess food</option>
+                                        <option value="Managing leftovers">Managing leftovers</option>
+                                        <option value="Food storage">Food storage</option>
+                                        <option value="Tracking food waste">Tracking food waste</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label d-block">Q14. Which digital features would be most useful? (Multiple) <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        {% for feature in ['Food inventory', 'Expiry reminders', 'Meal planner', 'Leftover management', 'Waste tracking', 'Food-waste awareness/tips', 'Waste analysis/charts', 'Other'] %}
+                                        <div class="col-sm-6 col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="useful_features" value="{{ feature }}" id="feature_{{ loop.index }}">
+                                                <label class="form-check-label small" for="feature_{{ loop.index }}">{{ feature }}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 6 -->
+                        <div class="p-3 mb-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-6-circle-fill me-1"></i> Section 6: Qualitative Feedback</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label" for="q16">Q16. What is the biggest challenge you face in reducing food waste at home? <span class="text-danger">*</span></label>
+                                    <textarea name="biggest_challenge" id="q16" rows="2" class="form-control" placeholder="e.g., Unpredictable daily meal schedule, forgetting produce in the crisper drawer" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="q17">Q17. Do you have any suggestions for improving household food-waste management? (Optional)</label>
+                                    <textarea name="improvement_suggestions" id="q17" rows="2" class="form-control" placeholder="e.g., Simple mobile notifications, quick leftover recipe cards"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="reset" class="btn btn-secondary">Reset Form</button>
+                            <button type="submit" class="btn btn-success fw-bold px-4"><i class="bi bi-check-circle me-1"></i> Save Survey Response</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: CSV Import Tool -->
+        <div class="tab-pane fade" id="tab-csv" role="tabpanel">
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-spreadsheet text-success fs-5"></i>
+                        <span>Import Google Form Responses via CSV</span>
+                    </div>
+                    <a href="{{ url_for('download_csv_template') }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-download me-1"></i> Download CSV Template
+                    </a>
+                </div>
+                <div class="card-custom-body p-4">
+                    <p class="text-muted small mb-3">
+                        Export your Google Sheet responses as a <code>.csv</code> file and upload below. Columns are verified against allowed survey options. Multi-select answers should be comma-separated.
+                    </p>
+
+                    <form method="POST" action="{{ url_for('import_survey_csv') }}" enctype="multipart/form-data" class="p-4 bg-light rounded-3 border mb-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="csvFile">Select Survey CSV File (.csv)</label>
+                            <input type="file" name="csv_file" id="csvFile" class="form-control" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom fw-bold"><i class="bi bi-cloud-upload me-1"></i> Validate & Import Responses</button>
+                    </form>
+
+                    <h6 class="fw-bold">Required CSV Columns:</h6>
+                    <div class="bg-white p-3 border rounded-3 small">
+                        <code>household_size, food_manager, waste_frequency, weekly_waste_amount, common_waste_category, waste_reasons, check_expiry_freq, meal_planning_freq, leftover_practice, storage_location, impact_awareness, current_practices, digital_tool_interest, useful_features, biggest_problem_to_solve, biggest_challenge, improvement_suggestions</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Entered Responses Table -->
+        <div class="tab-pane fade" id="tab-records" role="tabpanel">
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-list-columns text-primary fs-5"></i>
+                        <span>Collected Survey Responses ({{ responses|length }})</span>
+                    </div>
+                </div>
+                <div class="card-custom-body p-0">
+                    {% if responses %}
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover align-middle mb-0" id="surveyTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Household Size</th>
+                                    <th>Food Manager</th>
+                                    <th>Waste Freq</th>
+                                    <th>Weekly Loss</th>
+                                    <th>Top Wasted Food</th>
+                                    <th>Digital Tool?</th>
+                                    <th>Date Added</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for resp in responses %}
+                                <tr>
+                                    <td><strong>#{{ resp.id }}</strong></td>
+                                    <td>{{ resp.household_size }}</td>
+                                    <td>{{ resp.food_manager }}</td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">{{ resp.waste_frequency }}</span></td>
+                                    <td>{{ resp.weekly_waste_amount }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ resp.common_waste_category }}</span></td>
+                                    <td>
+                                        <span class="badge {% if resp.digital_tool_interest == 'Yes' %}bg-fresh-light text-success{% elif resp.digital_tool_interest == 'Maybe' %}bg-expiring-light text-warning{% else %}bg-expired-light text-danger{% endif %}">
+                                            {{ resp.digital_tool_interest }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ resp.created_at }}</td>
+                                    <td class="text-end">
+                                        <form method="POST" action="{{ url_for('delete_survey_response', resp_id=resp.id) }}" class="d-inline" onsubmit="return confirm('Delete this survey response entry?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon text-muted">
+                            <i class="bi bi-file-earmark-person"></i>
+                        </div>
+                        <h5>No Survey Responses Entered Yet</h5>
+                        <p>Use the Manual Questionnaire Entry tab or CSV Batch Import to add real responses from the Google Form.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

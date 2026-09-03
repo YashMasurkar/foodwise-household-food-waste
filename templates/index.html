@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Digital Food Waste Reduction System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <div class="hero-badge">
+            <i class="bi bi-shield-check"></i> Smart Household Food Management
+        </div>
+        <h1 class="hero-title">Reduce Food Waste.<br>Save Food. Save Money.</h1>
+        <p class="hero-subtitle mx-auto">
+            Smart digital tools for better food management at home. Track inventory, prevent expiry losses, plan balanced meals, and study household food practices with data-backed insights.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a href="{{ url_for('inventory') }}" class="btn btn-light btn-lg px-4 py-2 fw-bold text-success shadow-sm">
+                <i class="bi bi-box-seam me-2"></i> Start Managing Food
+            </a>
+            <a href="{{ url_for('awareness') }}" class="btn btn-outline-light btn-lg px-4 py-2 fw-bold">
+                <i class="bi bi-lightbulb me-2"></i> Learn About Food Waste
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Section 1: Why Food Waste Matters & System Overview -->
+<section class="container mb-5">
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-6">
+            <div class="pe-lg-3">
+                <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-bold mb-2">
+                    <i class="bi bi-globe-americas me-1"></i> Global & Local Impact
+                </span>
+                <h2 class="fw-bold mb-3">Why Food Waste Matters in Households</h2>
+                <p class="text-secondary leading-relaxed">
+                    Household food waste represents a major environmental, financial, and ethical challenge. When edible food is discarded, all the water, agricultural land, labor, and energy used to produce and transport it are wasted.
+                </p>
+                <div class="row g-3 mt-2">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-white border rounded-3 h-100 shadow-sm">
+                            <div class="text-danger fs-3 mb-1"><i class="bi bi-cash-stack"></i></div>
+                            <h6 class="fw-bold mb-1">Financial Loss</h6>
+                            <p class="small text-muted mb-0">Households unintentionally spend money on groceries that spoil before consumption.</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-white border rounded-3 h-100 shadow-sm">
+                            <div class="text-success fs-3 mb-1"><i class="bi bi-cloud-slash"></i></div>
+                            <h6 class="fw-bold mb-1">Methane & Carbon</h6>
+                            <p class="small text-muted mb-0">Decomposing food waste in landfills emits potent greenhouse gases affecting our climate.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-custom p-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Common Causes of Household Food Waste</h5>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+                        <i class="bi bi-x-circle-fill text-danger mt-1"></i>
+                        <div><strong>Forgotten Expiration Dates:</strong> Food items pushed to the back of the fridge or pantry and discovered after expiration.</div>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+                        <i class="bi bi-x-circle-fill text-danger mt-1"></i>
+                        <div><strong>Excess Purchasing & Bulk Buying:</strong> Buying perishable items without assessing current household stock.</div>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+                        <i class="bi bi-x-circle-fill text-danger mt-1"></i>
+                        <div><strong>Over-Preparation & Unused Leftovers:</strong> Cooking more than needed and lacking structured leftover utilization plans.</div>
+                    </li>
+                    <li class="list-group-item px-0 py-2 d-flex align-items-start gap-2">
+                        <i class="bi bi-x-circle-fill text-danger mt-1"></i>
+                        <div><strong>Improper Storage Methods:</strong> Storing temperature-sensitive produce improperly, leading to premature spoiling.</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 2: Key Features of This System -->
+<section class="container mb-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">
+            <i class="bi bi-gear-fill me-1"></i> Digital Solution
+        </span>
+        <h2 class="fw-bold">How This System Helps Households</h2>
+        <p class="text-muted mx-auto" style="max-width: 650px;">
+            A practical, structured set of modules designed to empower households with real-time tracking, notifications, planning tools, and community research analysis.
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Feature 1: Inventory -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-fresh-light mb-3">
+                    <i class="bi bi-boxes"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Food Inventory Management</h5>
+                <p class="text-muted small mb-3">
+                    Maintain an active record of all purchased food items, quantities, categories, and storage locations (Refrigerator, Freezer, Pantry).
+                </p>
+                <a href="{{ url_for('inventory') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    Manage Inventory <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Feature 2: Expiry Tracker -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-expiring-light mb-3">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Dynamic Expiry Tracker</h5>
+                <p class="text-muted small mb-3">
+                    Automatically computes remaining shelf-life with visual urgency badges: Fresh, Expiring Soon, Expiring Today, and Expired.
+                </p>
+                <a href="{{ url_for('expiry_tracker') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    Track Expiries <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Feature 3: Meal Planner -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-purple-light mb-3">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Weekly Meal Planner</h5>
+                <p class="text-muted small mb-3">
+                    Plan daily meals ahead of time and receive smart suggestions to prioritize ingredients nearing their expiry date.
+                </p>
+                <a href="{{ url_for('meal_planner') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    Plan Meals <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Feature 4: Leftovers -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-today-light mb-3">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Leftover Management</h5>
+                <p class="text-muted small mb-3">
+                    Keep track of prepared food, set consume-before dates, and explore practical culinary reuse ideas with safety reminders.
+                </p>
+                <a href="{{ url_for('leftovers') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    Manage Leftovers <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Feature 5: Waste Tracking -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-expired-light mb-3">
+                    <i class="bi bi-trash3"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Waste Tracking & Valuation</h5>
+                <p class="text-muted small mb-3">
+                    Record discarded items, reasons (expiry, spoilage, overcooking), and estimated monetary loss with dynamic visual charts.
+                </p>
+                <a href="{{ url_for('waste_tracking') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    Track Discards <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Feature 6: Survey & Analytics -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card-custom h-100 p-4">
+                <div class="stat-icon bg-info-light-custom mb-3">
+                    <i class="bi bi-clipboard-data"></i>
+                </div>
+                <h5 class="fw-bold mb-2">CEP Survey & Analytics</h5>
+                <p class="text-muted small mb-3">
+                    Enter collected Google Form responses, perform dynamic statistical aggregations, and generate automated research findings.
+                </p>
+                <a href="{{ url_for('survey_results') }}" class="btn btn-outline-custom btn-sm mt-auto">
+                    View Survey Data <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 3: Food Waste Reduction Tips Preview -->
+<section class="bg-white py-5 border-top border-bottom mb-5">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+            <div>
+                <span class="badge bg-success text-white px-3 py-1 rounded-pill fw-bold mb-2">Practical Action</span>
+                <h3 class="fw-bold mb-1">Essential Household Food Waste Reduction Tips</h3>
+            </div>
+            <a href="{{ url_for('awareness') }}" class="btn btn-outline-success">
+                View All 10 Awareness Guides <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-success fw-bold">
+                        <i class="bi bi-cart-check fs-5"></i> Plan Before Shopping
+                    </div>
+                    <p class="small text-muted mb-0">Check existing fridge and pantry stock, make an exact grocery list, and avoid impulsive bulk purchases.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-primary fw-bold">
+                        <i class="bi bi-arrow-left-right fs-5"></i> First In, First Out (FIFO)
+                    </div>
+                    <p class="small text-muted mb-0">Place newly purchased groceries behind older ones so older stock is consumed before expiration.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 border h-100">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-warning fw-bold">
+                        <i class="bi bi-thermometer-snow fs-5"></i> Proper Storage Hygiene
+                    </div>
+                    <p class="small text-muted mb-0">Store ethylene-emitting fruits separately, keep the refrigerator between 1°C and 4°C, and seal dry goods.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 4: Community Research Study & Survey CTA -->
+<section class="container mb-5">
+    <div class="card-custom bg-dark text-white p-4 p-lg-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill mb-2">
+                    <i class="bi bi-people-fill me-1"></i> Household Research Study
+                </span>
+                <h3 class="fw-bold mb-3">Participate in our Household Food Waste Study</h3>
+                <p class="text-light opacity-75 mb-3">
+                    Our team is studying everyday food management patterns across local households using a standardized anonymous Google Form. If you are part of the participating group, your responses directly inform our data-driven analytics.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('survey_data') }}" class="btn btn-success fw-bold">
+                        <i class="bi bi-pencil-square me-1"></i> Enter Survey Responses
+                    </a>
+                    <a href="{{ url_for('survey_results') }}" class="btn btn-outline-light">
+                        <i class="bi bi-pie-chart me-1"></i> View Live Survey Analytics
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="p-4 bg-secondary bg-opacity-25 rounded-4 border border-secondary">
+                    <i class="bi bi-shield-check text-success display-4 mb-2"></i>
+                    <h6 class="fw-bold text-white mb-1">Strict Research Integrity</h6>
+                    <p class="small text-light opacity-75 mb-0">
+                        Zero synthetic or pre-seeded data. All survey statistics and findings are generated dynamically from verified responses.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

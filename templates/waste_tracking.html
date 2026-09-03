@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Waste Tracking - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-trash3 me-2"></i> Household Food Waste Tracking</h1>
+                <p>Quantify discarded food items, analyze primary wastage drivers, and calculate estimated financial loss.</p>
+            </div>
+            <button type="button" class="btn btn-light text-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addWasteModal">
+                <i class="bi bi-plus-circle me-1"></i> Log Waste Record
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Waste KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-expired-light"><i class="bi bi-trash3-fill text-danger"></i></div>
+                <div class="stat-value text-danger">{{ waste_records|length }}</div>
+                <div class="stat-label">Total Discard Incidents</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-info-light-custom"><i class="bi bi-calculator text-primary"></i></div>
+                <div class="stat-value">{{ "%.2f"|format(total_weight_kg) }} <small class="fs-6 text-muted">kg</small></div>
+                <div class="stat-label">Total Est. Weight (kg)</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-today-light"><i class="bi bi-cash-stack text-warning"></i></div>
+                <div class="stat-value text-danger">₹{{ "%.2f"|format(total_monetary_loss) }}</div>
+                <div class="stat-label">Estimated Monetary Loss*</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon bg-fresh-light"><i class="bi bi-tags text-success"></i></div>
+                <div class="stat-value text-truncate fs-4" title="{{ top_category or 'None' }}">{{ top_category or '—' }}</div>
+                <div class="stat-label">Top Discard Category</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pie-chart text-success fs-5"></i>
+                        <span>Waste by Food Category</span>
+                    </div>
+                </div>
+                <div class="card-custom-body">
+                    {% if waste_by_category and waste_by_category|length > 0 %}
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="wasteCategoryChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-pie-chart text-muted fs-2 mb-2 d-block"></i>
+                            <h6>No category discard data recorded yet.</h6>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart text-danger fs-5"></i>
+                        <span>Primary Wastage Reasons</span>
+                    </div>
+                </div>
+                <div class="card-custom-body">
+                    {% if waste_by_reason and waste_by_reason|length > 0 %}
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="wasteReasonChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-bar-chart text-muted fs-2 mb-2 d-block"></i>
+                            <h6>No wastage reason data recorded yet.</h6>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="card-custom p-3 mb-4 bg-white">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="wasteSearchInput" class="form-control border-start-0 ps-0" placeholder="Search by item name or remarks...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="wasteCategoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Vegetables">Vegetables</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Grains">Grains</option>
+                    <option value="Bakery">Bakery</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Cooked Food">Cooked Food</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select id="wasteReasonFilter" class="form-select">
+                    <option value="">All Reasons</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Spoiled">Spoiled</option>
+                    <option value="Overcooked">Overcooked</option>
+                    <option value="Excess preparation">Excess preparation</option>
+                    <option value="Unused leftovers">Unused leftovers</option>
+                    <option value="Storage problem">Storage problem</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waste Records Table -->
+    <div class="card-custom">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-journal-text text-danger fs-5"></i>
+                <span>Recorded Food Discards ({{ waste_records|length }})</span>
+            </div>
+        </div>
+        <div class="card-custom-body p-0">
+            {% if waste_records %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover align-middle mb-0" id="wasteTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Food Item</th>
+                            <th>Category</th>
+                            <th>Quantity Wasted</th>
+                            <th>Reason for Waste</th>
+                            <th>Estimated Value</th>
+                            <th>Remarks</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in waste_records %}
+                        <tr data-filter1="{{ record.category }}" data-filter2="{{ record.reason }}">
+                            <td><strong>{{ record.waste_date }}</strong></td>
+                            <td><strong class="d-block">{{ record.food_item }}</strong></td>
+                            <td><span class="badge bg-light text-dark border">{{ record.category }}</span></td>
+                            <td>{{ record.quantity_wasted }} {{ record.unit }}</td>
+                            <td>
+                                <span class="badge {% if record.reason == 'Expired' %}badge-expired{% elif record.reason == 'Spoiled' %}badge-expiring-today{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                    {{ record.reason }}
+                                </span>
+                            </td>
+                            <td><span class="text-danger fw-bold">₹{{ "%.2f"|format(record.estimated_value) }}*</span></td>
+                            <td class="small text-muted">{{ record.remarks or '—' }}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openEditWasteModal({{ record|tojson }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('delete_waste', waste_id=record.id) }}" class="d-inline" onsubmit="return confirm('Delete this waste record?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div id="wasteTableNoMatch" class="empty-state py-4" style="display: none;">
+                <i class="bi bi-search text-muted fs-3 mb-2 d-block"></i>
+                <h6>No waste records match your search or filter.</h6>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon text-muted">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+                <h5>No Waste Records Logged</h5>
+                <p>Tracking discarded food helps households identify patterns and reduce avoidable future grocery expenses.</p>
+                <button type="button" class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addWasteModal">
+                    <i class="bi bi-plus-lg me-1"></i> Log Your First Waste Record
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="text-muted small mt-4 text-center">
+        * <em>Monetary loss amounts represent user estimates for research quantification purposes.</em>
+    </div>
+</div>
+
+<!-- Add Waste Modal -->
+<div class="modal fade" id="addWasteModal" tabindex="-1" aria-labelledby="addWasteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{{ url_for('add_waste') }}">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold" id="addWasteModalLabel"><i class="bi bi-trash3 me-2"></i> Log Discarded Food Item</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="wasteFoodItem">Food Item <span class="text-danger">*</span></label>
+                        <input type="text" name="food_item" id="wasteFoodItem" class="form-control" value="{{ request.args.get('prefill_name', '') }}" placeholder="e.g., Bread, Milk, Cooked Rice" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="wasteCategory">Category <span class="text-danger">*</span></label>
+                            <select name="category" id="wasteCategory" class="form-select" required>
+                                <option value="">Select Category</option>
+                                <option value="Fruits" {% if request.args.get('prefill_cat') == 'Fruits' %}selected{% endif %}>Fruits</option>
+                                <option value="Vegetables" {% if request.args.get('prefill_cat') == 'Vegetables' %}selected{% endif %}>Vegetables</option>
+                                <option value="Dairy" {% if request.args.get('prefill_cat') == 'Dairy' %}selected{% endif %}>Dairy</option>
+                                <option value="Grains" {% if request.args.get('prefill_cat') == 'Grains' %}selected{% endif %}>Grains</option>
+                                <option value="Bakery" {% if request.args.get('prefill_cat') == 'Bakery' %}selected{% endif %}>Bakery</option>
+                                <option value="Meat" {% if request.args.get('prefill_cat') == 'Meat' %}selected{% endif %}>Meat</option>
+                                <option value="Cooked Food" {% if request.args.get('prefill_cat') == 'Cooked Food' %}selected{% endif %}>Cooked Food</option>
+                                <option value="Beverages" {% if request.args.get('prefill_cat') == 'Beverages' %}selected{% endif %}>Beverages</option>
+                                <option value="Other" {% if request.args.get('prefill_cat') == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="wasteReason">Reason for Waste <span class="text-danger">*</span></label>
+                            <select name="reason" id="wasteReason" class="form-select" required>
+                                <option value="Expired">Expired</option>
+                                <option value="Spoiled">Spoiled</option>
+                                <option value="Overcooked">Overcooked</option>
+                                <option value="Excess preparation">Excess preparation</option>
+                                <option value="Unused leftovers">Unused leftovers</option>
+                                <option value="Storage problem">Storage problem</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="wasteQuantity">Quantity Wasted <span class="text-danger">*</span></label>
+                            <input type="number" step="any" min="0.01" name="quantity_wasted" id="wasteQuantity" class="form-control" value="{{ request.args.get('prefill_qty', '') }}" placeholder="e.g., 0.5" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="wasteUnit">Unit <span class="text-danger">*</span></label>
+                            <select name="unit" id="wasteUnit" class="form-select" required>
+                                <option value="kg" {% if request.args.get('prefill_unit') == 'kg' %}selected{% endif %}>Kilograms (kg)</option>
+                                <option value="g" {% if request.args.get('prefill_unit') == 'g' %}selected{% endif %}>Grams (g)</option>
+                                <option value="L" {% if request.args.get('prefill_unit') == 'L' %}selected{% endif %}>Liters (L)</option>
+                                <option value="ml" {% if request.args.get('prefill_unit') == 'ml' %}selected{% endif %}>Milliliters (ml)</option>
+                                <option value="pieces" {% if request.args.get('prefill_unit') == 'pieces' %}selected{% endif %}>Pieces</option>
+                                <option value="packets" {% if request.args.get('prefill_unit') == 'packets' %}selected{% endif %}>Packets</option>
+                                <option value="servings" {% if request.args.get('prefill_unit') == 'servings' %}selected{% endif %}>Servings</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="wasteDate">Date of Discard <span class="text-danger">*</span></label>
+                            <input type="date" name="waste_date" id="wasteDate" class="form-control" value="{{ today_date }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="estimatedValue">Est. Monetary Value (₹) <span class="text-danger">*</span></label>
+                            <input type="number" step="any" min="0" name="estimated_value" id="estimatedValue" class="form-control" value="0.00" placeholder="e.g., 50.00" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="wasteRemarks">Remarks / Circumstances</label>
+                        <textarea name="remarks" id="wasteRemarks" rows="2" class="form-control" placeholder="e.g., Forgot in back of fridge for 1 week"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger fw-bold"><i class="bi bi-check-lg me-1"></i> Save Discard Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Waste Modal -->
+<div class="modal fade" id="editWasteModal" tabindex="-1" aria-labelledby="editWasteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" id="editWasteForm" action="">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="editWasteModalLabel"><i class="bi bi-pencil-square me-2"></i> Edit Waste Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="editWasteFoodItem">Food Item <span class="text-danger">*</span></label>
+                        <input type="text" name="food_item" id="editWasteFoodItem" class="form-control" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="editWasteCategory">Category <span class="text-danger">*</span></label>
+                            <select name="category" id="editWasteCategory" class="form-select" required>
+                                <option value="Fruits">Fruits</option>
+                                <option value="Vegetables">Vegetables</option>
+                                <option value="Dairy">Dairy</option>
+                                <option value="Grains">Grains</option>
+                                <option value="Bakery">Bakery</option>
+                                <option value="Meat">Meat</option>
+                                <option value="Cooked Food">Cooked Food</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="editWasteReason">Reason for Waste <span class="text-danger">*</span></label>
+                            <select name="reason" id="editWasteReason" class="form-select" required>
+                                <option value="Expired">Expired</option>
+                                <option value="Spoiled">Spoiled</option>
+                                <option value="Overcooked">Overcooked</option>
+                                <option value="Excess preparation">Excess preparation</option>
+                                <option value="Unused leftovers">Unused leftovers</option>
+                                <option value="Storage problem">Storage problem</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="editWasteQuantity">Quantity Wasted <span class="text-danger">*</span></label>
+                            <input type="number" step="any" min="0.01" name="quantity_wasted" id="editWasteQuantity" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="editWasteUnit">Unit <span class="text-danger">*</span></label>
+                            <select name="unit" id="editWasteUnit" class="form-select" required>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="g">Grams (g)</option>
+                                <option value="L">Liters (L)</option>
+                                <option value="ml">Milliliters (ml)</option>
+                                <option value="pieces">Pieces</option>
+                                <option value="packets">Packets</option>
+                                <option value="servings">Servings</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="editWasteDate">Date of Discard <span class="text-danger">*</span></label>
+                            <input type="date" name="waste_date" id="editWasteDate" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="editEstimatedValue">Est. Monetary Value (₹) <span class="text-danger">*</span></label>
+                            <input type="number" step="any" min="0" name="estimated_value" id="editEstimatedValue" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="editWasteRemarks">Remarks</label>
+                        <textarea name="remarks" id="editWasteRemarks" rows="2" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-save me-1"></i> Update Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // If prefill query param was passed, show modal automatically
+    {% if request.args.get('prefill_name') %}
+    const addModal = new bootstrap.Modal(document.getElementById('addWasteModal'));
+    addModal.show();
+    {% endif %}
+
+    // Category Chart
+    {% if waste_by_category and waste_by_category|length > 0 %}
+    const catLabels = {{ waste_by_category | map(attribute='category') | list | tojson }};
+    const catData = {{ waste_by_category | map(attribute='total_qty') | list | tojson }};
+    createDoughnutChart('wasteCategoryChart', catLabels, catData, 'Quantity Wasted by Category');
+    {% endif %}
+
+    // Reason Chart
+    {% if waste_by_reason and waste_by_reason|length > 0 %}
+    const reasonLabels = {{ waste_by_reason | map(attribute='reason') | list | tojson }};
+    const reasonData = {{ waste_by_reason | map(attribute='count') | list | tojson }};
+    createBarChart('wasteReasonChart', reasonLabels, reasonData, 'Number of Incidents', false);
+    {% endif %}
+});
+
+function openEditWasteModal(record) {
+    document.getElementById('editWasteForm').action = "/waste-tracking/edit/" + record.id;
+    document.getElementById('editWasteFoodItem').value = record.food_item;
+    document.getElementById('editWasteCategory').value = record.category;
+    document.getElementById('editWasteReason').value = record.reason;
+    document.getElementById('editWasteQuantity').value = record.quantity_wasted;
+    document.getElementById('editWasteUnit').value = record.unit;
+    document.getElementById('editWasteDate').value = record.waste_date;
+    document.getElementById('editEstimatedValue').value = record.estimated_value;
+    document.getElementById('editWasteRemarks').value = record.remarks || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('editWasteModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

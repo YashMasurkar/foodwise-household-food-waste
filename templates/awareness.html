@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Food Waste Awareness & Practical Tips - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-lightbulb me-2"></i> Household Food Waste Reduction Guide</h1>
+                <p>10 practical, evidence-based practices to manage food responsibly, save money, and live sustainably.</p>
+            </div>
+            <a href="{{ url_for('inventory') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                <i class="bi bi-box-seam me-1"></i> Apply in Inventory
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Intro Banner -->
+    <div class="card-custom p-4 bg-white mb-5 border-start border-4 border-success">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <h5 class="fw-bold text-success mb-2">Creating Sustainable Household Habits</h5>
+                <p class="text-secondary small mb-0">
+                    Household food waste is preventable. By making conscious adjustments in meal planning, storage hygiene, and inventory awareness, everyday households can cut grocery losses significantly while helping reduce landfill greenhouse gas emissions.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill fw-bold">
+                    <i class="bi bi-check-circle-fill me-1"></i> Practical Household Guide
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10 Structured Tips Grid -->
+    <div class="row g-4">
+        <!-- Tip 1 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-journal-check"></i></div>
+                <h5 class="fw-bold mb-2">1. Plan Meals Before Shopping</h5>
+                <p class="text-muted small mb-3">
+                    Impulsive grocery purchases lead to unused perishables. Checking refrigerator contents and creating a weekly menu eliminates redundant items.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Inspect existing stock and draft a specific 7-day dinner roster before visiting the grocery store.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 2 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-calendar-event"></i></div>
+                <h5 class="fw-bold mb-2">2. Check Expiry Dates Systematically</h5>
+                <p class="text-muted small mb-3">
+                    Perishable groceries often spoil when buried under newer purchases. Regular expiry checks ensure items are consumed while fresh.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Perform a 2-minute weekly fridge audit and move items expiring in 1–3 days to a front "Eat First" tray.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 3 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-thermometer-snow"></i></div>
+                <h5 class="fw-bold mb-2">3. Store Food Properly</h5>
+                <p class="text-muted small mb-3">
+                    Different foods require tailored micro-climates. Improper storage accelerates spoilage, mold development, and moisture loss.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Keep fridge temperature between 1°C–4°C; separate ethylene gas emitters (bananas, apples) from leafy greens.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 4 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-pie-chart"></i></div>
+                <h5 class="fw-bold mb-2">4. Cook Appropriate Quantities</h5>
+                <p class="text-muted small mb-3">
+                    Over-preparation is one of the leading causes of cooked food disposal in family homes. Standardizing portions reduces post-meal discards.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Measure grains (rice/pasta) with cup measures based on the exact number of diners attending the meal.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 5 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-arrow-repeat"></i></div>
+                <h5 class="fw-bold mb-2">5. Reuse Suitable Leftovers</h5>
+                <p class="text-muted small mb-3">
+                    Wholesome leftover dishes can be repurposed into nutritious new preparations like fried rice, stir-fries, cutlets, or soup bases.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Store leftovers in clear airtight containers, date-label them, and incorporate them into the next day's lunch.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 6 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-arrow-left-right"></i></div>
+                <h5 class="fw-bold mb-2">6. Follow FIFO (First In, First Out)</h5>
+                <p class="text-muted small mb-3">
+                    A foundational kitchen inventory principle: older groceries should always be placed in front of newly acquired stock.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> When unpacking new milk, bread, or vegetables, rotate existing stock to the front shelf.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 7 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-cart3"></i></div>
+                <h5 class="fw-bold mb-2">7. Buy Only What Is Needed</h5>
+                <p class="text-muted small mb-3">
+                    Discounted bulk packs of highly perishable fresh produce often expire before a single household can finish them.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Stick firmly to an itemized shopping list and resist promotional impulse buys for perishables.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 8 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-heart"></i></div>
+                <h5 class="fw-bold mb-2">8. Donate Suitable Surplus</h5>
+                <p class="text-muted small mb-3">
+                    Unopened, wholesome packaged food items approaching their best-by dates can benefit community food banks or neighbors.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Identify local community food sharing initiatives for unexpired sealed dry goods and canned items.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 9 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-flower2"></i></div>
+                <h5 class="fw-bold mb-2">9. Compost Suitable Organic Waste</h5>
+                <p class="text-muted small mb-3">
+                    Inedible food scraps (fruit peels, coffee grounds, eggshells) should be diverted from landfills to create nutrient-dense garden soil.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Set up a small kitchen scrap bin for plant-based trimmings to feed a home or community composting pot.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tip 10 -->
+        <div class="col-md-6 col-lg-4">
+            <div class="tip-card">
+                <div class="tip-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <h5 class="fw-bold mb-2">10. Track Household Food Waste</h5>
+                <p class="text-muted small mb-3">
+                    What gets measured gets managed. Maintaining a simple log of discarded food reveals household spending leaks and habitual patterns.
+                </p>
+                <div class="p-2 bg-light rounded-2 small text-dark border">
+                    <strong><i class="bi bi-arrow-right-short text-success"></i> Practical Action:</strong> Use this digital system's Waste Tracker to log discarded items and monitor your reduction trajectory over time.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-speedometer2 me-2"></i> Household Management Dashboard</h1>
+                <p>Real-time overview of active inventory, expiry alerts, waste tracking metrics, and survey response count.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('inventory') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Add Food Item
+                </a>
+                <a href="{{ url_for('waste_tracking') }}" class="btn btn-outline-light fw-bold">
+                    <i class="bi bi-trash3 me-1"></i> Log Waste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Stat KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-fresh-light"><i class="bi bi-boxes"></i></div>
+                <div class="stat-value">{{ metrics.total_items }}</div>
+                <div class="stat-label">Total Food Items</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-expiring-light"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="stat-value text-warning">{{ metrics.expiring_soon_count }}</div>
+                <div class="stat-label">Expiring Soon (1-3d)</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-expired-light"><i class="bi bi-x-octagon"></i></div>
+                <div class="stat-value text-danger">{{ metrics.expired_count }}</div>
+                <div class="stat-label">Expired Items</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-purple-light"><i class="bi bi-arrow-repeat"></i></div>
+                <div class="stat-value">{{ metrics.total_leftovers }}</div>
+                <div class="stat-label">Active Leftovers</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-info-light-custom"><i class="bi bi-trash3"></i></div>
+                <div class="stat-value">{{ metrics.total_waste_records }}</div>
+                <div class="stat-label">Waste Records</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card h-100">
+                <div class="stat-icon bg-today-light"><i class="bi bi-cash"></i></div>
+                <div class="stat-value text-danger">₹{{ "%.2f"|format(metrics.total_waste_value) }}</div>
+                <div class="stat-label">Est. Waste Loss*</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty Database Banner if completely empty -->
+    {% if metrics.is_empty %}
+    <div class="card-custom p-4 mb-4 border-dashed text-center bg-white">
+        <div class="empty-state-icon text-muted">
+            <i class="bi bi-inbox"></i>
+        </div>
+        <h5>No Data Available Yet</h5>
+        <p class="text-muted mb-3">
+            Add food items to your inventory, record meal plans, or enter real survey responses to view live dynamic analytics.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('inventory') }}" class="btn btn-primary-custom btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Add First Food Item
+            </a>
+            <a href="{{ url_for('survey_data') }}" class="btn btn-outline-custom btn-sm">
+                <i class="bi bi-pencil-square me-1"></i> Enter Survey Response
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Row: Expiring Soon List + Charts -->
+    <div class="row g-4 mb-4">
+        <!-- Expiring Soon Highlight Section -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-alarm text-warning fs-5"></i>
+                        <span>Items Requiring Immediate Attention</span>
+                    </div>
+                    <a href="{{ url_for('expiry_tracker') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+                </div>
+                <div class="card-custom-body p-0">
+                    {% if expiring_items %}
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in expiring_items %}
+                                <tr>
+                                    <td><strong>{{ item.name }}</strong></td>
+                                    <td><span class="badge bg-light text-dark border">{{ item.category }}</span></td>
+                                    <td>{{ item.quantity }} {{ item.unit }}</td>
+                                    <td>{{ item.expiry_date }}</td>
+                                    <td>
+                                        {% if item.days_left < 0 %}
+                                            <span class="badge-status badge-expired"><i class="bi bi-x-circle"></i> Expired ({{ -item.days_left }}d ago)</span>
+                                        {% elif item.days_left == 0 %}
+                                            <span class="badge-status badge-expiring-today"><i class="bi bi-exclamation-circle"></i> Today</span>
+                                        {% else %}
+                                            <span class="badge-status badge-expiring-soon"><i class="bi bi-clock-history"></i> In {{ item.days_left }} day{% if item.days_left > 1 %}s{% endif %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state py-4">
+                        <i class="bi bi-check2-circle text-success fs-2 mb-2 d-block"></i>
+                        <h6 class="fw-bold">No Items Expiring Soon</h6>
+                        <p class="small text-muted mb-0">All active inventory items have sufficient shelf life or no items have been logged.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Waste By Category Chart -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pie-chart text-success fs-5"></i>
+                        <span>Food Waste by Category (Recorded Discards)</span>
+                    </div>
+                    <a href="{{ url_for('waste_tracking') }}" class="btn btn-outline-secondary btn-sm">Log</a>
+                </div>
+                <div class="card-custom-body">
+                    {% if waste_by_category and waste_by_category|length > 0 %}
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="dashboardCategoryChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-pie-chart text-muted fs-2 mb-2 d-block"></i>
+                            <h6 class="fw-bold">No Discards Logged Yet</h6>
+                            <p class="small text-muted mb-0">Record items in the Waste Tracking module to view category breakdown.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Row: Waste Reasons & Monthly Trend Charts -->
+    <div class="row g-4">
+        <!-- Waste Reason Distribution -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart text-primary fs-5"></i>
+                        <span>Reported Reasons for Food Wastage</span>
+                    </div>
+                </div>
+                <div class="card-custom-body">
+                    {% if waste_by_reason and waste_by_reason|length > 0 %}
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="dashboardReasonChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-bar-chart text-muted fs-2 mb-2 d-block"></i>
+                            <h6 class="fw-bold">No Waste Reason Data</h6>
+                            <p class="small text-muted mb-0">Waste reason distribution will display as items are recorded.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Waste Trend -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-graph-up text-danger fs-5"></i>
+                        <span>Monthly Estimated Waste Loss Trend</span>
+                    </div>
+                </div>
+                <div class="card-custom-body">
+                    {% if monthly_waste and monthly_waste|length > 0 %}
+                        <div style="position: relative; height: 260px;">
+                            <canvas id="dashboardMonthlyChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-graph-up text-muted fs-2 mb-2 d-block"></i>
+                            <h6 class="fw-bold">No Monthly Trend Data</h6>
+                            <p class="small text-muted mb-0">Trend lines will render dynamically across months once data is logged.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footnote on Monetary Values -->
+    <div class="text-muted small mt-4 text-center">
+        * <em>Note: Monetary values represent user-entered estimates for research analysis and do not reflect financial accounting guarantees.</em>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Waste Category Chart
+    {% if waste_by_category and waste_by_category|length > 0 %}
+    const catLabels = {{ waste_by_category | map(attribute='category') | list | tojson }};
+    const catData = {{ waste_by_category | map(attribute='total_qty') | list | tojson }};
+    createDoughnutChart('dashboardCategoryChart', catLabels, catData, 'Quantity Wasted by Category');
+    {% endif %}
+
+    // 2. Waste Reason Chart
+    {% if waste_by_reason and waste_by_reason|length > 0 %}
+    const reasonLabels = {{ waste_by_reason | map(attribute='reason') | list | tojson }};
+    const reasonData = {{ waste_by_reason | map(attribute='count') | list | tojson }};
+    createBarChart('dashboardReasonChart', reasonLabels, reasonData, 'Number of Incidents', false);
+    {% endif %}
+
+    // 3. Monthly Waste Loss Chart
+    {% if monthly_waste and monthly_waste|length > 0 %}
+    const monthLabels = {{ monthly_waste | map(attribute='month') | list | tojson }};
+    const monthData = {{ monthly_waste | map(attribute='total_val') | list | tojson }};
+    createLineChart('dashboardMonthlyChart', monthLabels, monthData, 'Estimated Loss (₹)');
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Meal Planner - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-calendar-week me-2"></i> Household Meal Planner</h1>
+                <p>Plan weekly meals to prevent over-purchasing and utilize ingredients before they expire.</p>
+            </div>
+            <button type="button" class="btn btn-light text-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addMealModal">
+                <i class="bi bi-plus-circle me-1"></i> Add Meal Plan
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Dynamic Inventory Expiry Suggestions -->
+    <div class="card-custom p-4 mb-4 bg-white border-start border-4 border-warning">
+        <div class="d-flex align-items-start gap-3">
+            <div class="text-warning fs-3 mt-1"><i class="bi bi-lightbulb-fill"></i></div>
+            <div class="w-100">
+                <h5 class="fw-bold mb-1">Smart Meal Planning Suggestions</h5>
+                <p class="text-muted small mb-2">
+                    Prioritize active inventory items nearing their expiration dates to reduce household food discards:
+                </p>
+                {% if expiring_suggestions %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for sug in expiring_suggestions %}
+                    <span class="badge bg-warning-subtle text-dark border border-warning p-2">
+                        <i class="bi bi-exclamation-circle text-warning me-1"></i>
+                        <strong>{{ sug.name }}</strong> ({{ sug.quantity }} {{ sug.unit }}) &bull; Expires in {{ sug.days_left }}d ({{ sug.expiry_date }})
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="small text-success">
+                    <i class="bi bi-check-circle me-1"></i> No immediate perishable ingredients expiring within 3 days. Plan according to your regular household schedule.
+                </div>
+                {% endif %}
+                <div class="text-muted small mt-2">
+                    <em>* Note: Suggestions are algorithmic indicators based purely on your entered inventory dates. Always check visual freshness and aroma before cooking.</em>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meal Plans View (Organized by Day or Table) -->
+    <div class="card-custom">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-check text-primary fs-5"></i>
+                <span>Planned Meals ({{ meal_plans|length }})</span>
+            </div>
+        </div>
+        <div class="card-custom-body p-0">
+            {% if meal_plans %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Planned Date</th>
+                            <th>Meal Type</th>
+                            <th>Meal / Dish Name</th>
+                            <th>Key Ingredients</th>
+                            <th>Notes</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for meal in meal_plans %}
+                        <tr>
+                            <td>
+                                <strong>{{ meal.meal_date }}</strong>
+                                <small class="text-muted d-block">{{ meal.day_name }}</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if meal.meal_type == 'Breakfast' %}bg-info-light-custom text-primary{% elif meal.meal_type == 'Lunch' %}bg-fresh-light text-success{% elif meal.meal_type == 'Dinner' %}bg-purple-light text-purple{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                    {{ meal.meal_type }}
+                                </span>
+                            </td>
+                            <td><strong class="fs-6">{{ meal.meal_name }}</strong></td>
+                            <td><span class="text-secondary small">{{ meal.ingredients }}</span></td>
+                            <td class="small text-muted">{{ meal.notes or '—' }}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openEditMealModal({{ meal|tojson }})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('delete_meal', meal_id=meal.id) }}" class="d-inline" onsubmit="return confirm('Delete this planned meal?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon text-primary">
+                    <i class="bi bi-calendar-plus"></i>
+                </div>
+                <h5>No Meal Plans Scheduled</h5>
+                <p>Planning meals helps households buy only necessary groceries and avoid last-minute spoilage.</p>
+                <button type="button" class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addMealModal">
+                    <i class="bi bi-plus-lg me-1"></i> Create Your First Meal Plan
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Meal Modal -->
+<div class="modal fade" id="addMealModal" tabindex="-1" aria-labelledby="addMealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{{ url_for('add_meal') }}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="addMealModalLabel"><i class="bi bi-calendar-plus me-2"></i> Add Meal Plan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="mealName">Meal / Recipe Name <span class="text-danger">*</span></label>
+                        <input type="text" name="meal_name" id="mealName" class="form-control" placeholder="e.g., Vegetable Pulao, Spinach Soup, Pasta" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="mealType">Meal Type <span class="text-danger">*</span></label>
+                            <select name="meal_type" id="mealType" class="form-select" required>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch" selected>Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Snack">Snack</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="mealDate">Planned Date <span class="text-danger">*</span></label>
+                            <input type="date" name="meal_date" id="mealDate" class="form-control" value="{{ today_date }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="mealIngredients">Key Ingredients <span class="text-danger">*</span></label>
+                        <textarea name="ingredients" id="mealIngredients" rows="2" class="form-control" placeholder="e.g., Rice, Tomatoes, Onions, Peas" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="mealNotes">Notes</label>
+                        <textarea name="notes" id="mealNotes" rows="2" class="form-control" placeholder="e.g., Use leftover cooked rice or fresh herbs"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success fw-bold"><i class="bi bi-check-lg me-1"></i> Save Meal Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Meal Modal -->
+<div class="modal fade" id="editMealModal" tabindex="-1" aria-labelledby="editMealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" id="editMealForm" action="">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="editMealModalLabel"><i class="bi bi-pencil-square me-2"></i> Edit Meal Plan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="editMealName">Meal / Recipe Name <span class="text-danger">*</span></label>
+                        <input type="text" name="meal_name" id="editMealName" class="form-control" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="editMealType">Meal Type <span class="text-danger">*</span></label>
+                            <select name="meal_type" id="editMealType" class="form-select" required>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Snack">Snack</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="editMealDate">Planned Date <span class="text-danger">*</span></label>
+                            <input type="date" name="meal_date" id="editMealDate" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="editMealIngredients">Key Ingredients <span class="text-danger">*</span></label>
+                        <textarea name="ingredients" id="editMealIngredients" rows="2" class="form-control" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="editMealNotes">Notes</label>
+                        <textarea name="notes" id="editMealNotes" rows="2" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-save me-1"></i> Update Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openEditMealModal(meal) {
+    document.getElementById('editMealForm').action = "/meal-planner/edit/" + meal.id;
+    document.getElementById('editMealName').value = meal.meal_name;
+    document.getElementById('editMealType').value = meal.meal_type;
+    document.getElementById('editMealDate').value = meal.meal_date;
+    document.getElementById('editMealIngredients').value = meal.ingredients;
+    document.getElementById('editMealNotes').value = meal.notes || '';
+
+    const modal = new bootstrap.Modal(document.getElementById('editMealModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

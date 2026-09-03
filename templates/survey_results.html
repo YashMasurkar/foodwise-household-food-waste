@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Analytics & Findings - FoodWise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h1><i class="bi bi-pie-chart-fill me-2"></i> Household Survey Analytics & Findings</h1>
+                <p>Data-driven analysis and automated research interpretations derived from verified household survey responses.</p>
+            </div>
+            <a href="{{ url_for('survey_data') }}" class="btn btn-light text-success fw-bold shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i> Enter New Survey Response
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    {% if total_responses == 0 %}
+    <!-- Zero Responses Empty State -->
+    <div class="card-custom p-5 text-center bg-white">
+        <div class="empty-state-icon text-primary">
+            <i class="bi bi-bar-chart"></i>
+        </div>
+        <h4 class="fw-bold">No Survey Data Has Been Entered Yet</h4>
+        <p class="text-muted mx-auto mb-4" style="max-width: 550px;">
+            Analysis, dynamic charts, and research interpretations will appear immediately after real household responses from the Google Form are entered or imported.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('survey_data') }}" class="btn btn-primary-custom">
+                <i class="bi bi-pencil-square me-1"></i> Go to Survey Data Entry
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <!-- Summary Header KPI & Dynamic Interpretations -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white border-0 h-100">
+                <div class="stat-icon bg-white text-primary mb-2"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-value text-white">{{ total_responses }}</div>
+                <div class="stat-label text-white-50">Total Real Respondents</div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card-custom p-4 bg-white h-100 border-start border-4 border-success">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-cpu-fill text-success fs-5"></i>
+                    <h6 class="fw-bold mb-0 text-success">Automated Survey Interpretations (Based on {{ total_responses }} Households)</h6>
+                </div>
+                <ul class="mb-0 small text-secondary d-flex flex-column gap-1 ps-3">
+                    {% for finding in dynamic_findings %}
+                    <li>{{ finding }}</li>
+                    {% endfor %}
+                </ul>
+                <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                    <em>* Note: Findings describe trends strictly among the surveyed households (approx. 10–20 sample) and are dynamically generated from current database entries.</em>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1 & 2: Household Profile & Waste Frequency -->
+    <div class="row g-4 mb-4">
+        <!-- Q1: Household Size -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q1. Household Size Distribution</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartHouseholdSize"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q2: Food Manager -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q2. Primary Food Preparation Manager</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartFoodManager"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q3: Waste Frequency -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q3. Reported Frequency of Food Wastage</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartWasteFreq"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q4: Weekly Waste Quantity -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q4. Weekly Estimated Food Waste Quantity</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartWeeklyAmount"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q5: Most Wasted Food Category -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q5. Most Commonly Wasted Food Category</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartCommonCategory"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q6: Reasons for Waste (Multi-select) -->
+        <div class="col-lg-6">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q6. Reasons for Food Wastage (% of Households)</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 250px;">
+                        <canvas id="chartWasteReasons"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Management Habits -->
+    <div class="row g-4 mb-4">
+        <!-- Q7: Expiry Checking -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span class="small fw-bold">Q7. Expiry Check Habits</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="chartExpiryCheck"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q8: Meal Planning -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span class="small fw-bold">Q8. Meal Planning Habits</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="chartMealPlanning"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q9: Leftover Practice -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span class="small fw-bold">Q9. Usual Leftover Action</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="chartLeftoverAction"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q10: Storage Method -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span class="small fw-bold">Q10. Usual Storage Place</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="chartStorageHabit"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4 & 5: Awareness, Readiness & Digital Solution -->
+    <div class="row g-4 mb-4">
+        <!-- Q11: Impact Awareness -->
+        <div class="col-lg-4">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q11. Impact Awareness Level</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 240px;">
+                        <canvas id="chartAwareness"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q12: Current Waste Reduction Practices -->
+        <div class="col-lg-8">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q12. Current Reduction Practices Used (% of Respondents)</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 240px;">
+                        <canvas id="chartCurrentPractices"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q13: Digital Tool Interest -->
+        <div class="col-lg-4">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q13. Willingness to Use Digital Tool</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 240px;">
+                        <canvas id="chartDigitalInterest"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q14: Preferred Features -->
+        <div class="col-lg-4">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q14. Most Useful Digital Features</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 240px;">
+                        <canvas id="chartUsefulFeatures"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q15: Biggest Problem to Solve -->
+        <div class="col-lg-4">
+            <div class="card-custom h-100">
+                <div class="card-custom-header">
+                    <span>Q15. Priority Problem to Solve</span>
+                </div>
+                <div class="card-custom-body">
+                    <div style="position: relative; height: 240px;">
+                        <canvas id="chartPriorityProblem"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Qualitative Household Feedback (Q16 & Q17) -->
+    <div class="card-custom mb-4">
+        <div class="card-custom-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-chat-left-quote text-primary fs-5"></i>
+                <span>Qualitative Household Insights & Suggestions (Q16 & Q17)</span>
+            </div>
+        </div>
+        <div class="card-custom-body">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-exclamation-circle text-warning me-1"></i> Reported Challenges (Q16)</h6>
+                    <div class="list-group list-group-flush small">
+                        {% for resp in qualitative_responses if resp.biggest_challenge %}
+                        <div class="list-group-item px-0 py-2 border-bottom">
+                            <i class="bi bi-chat-dots text-muted me-1"></i> "{{ resp.biggest_challenge }}"
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-lightbulb text-success me-1"></i> Improvement Suggestions (Q17)</h6>
+                    <div class="list-group list-group-flush small">
+                        {% for resp in qualitative_responses if resp.improvement_suggestions %}
+                        <div class="list-group-item px-0 py-2 border-bottom">
+                            <i class="bi bi-check2 text-success me-1"></i> "{{ resp.improvement_suggestions }}"
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">No optional suggestions were submitted.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if total_responses > 0 %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const surveyData = {{ survey_analytics|tojson }};
+
+    // Q1
+    createDoughnutChart('chartHouseholdSize', surveyData.q1_labels, surveyData.q1_counts);
+    // Q2
+    createDoughnutChart('chartFoodManager', surveyData.q2_labels, surveyData.q2_counts);
+    // Q3
+    createBarChart('chartWasteFreq', surveyData.q3_labels, surveyData.q3_counts, 'Responses', true);
+    // Q4
+    createBarChart('chartWeeklyAmount', surveyData.q4_labels, surveyData.q4_counts, 'Responses');
+    // Q5
+    createDoughnutChart('chartCommonCategory', surveyData.q5_labels, surveyData.q5_counts);
+    // Q6 (Percentages)
+    createBarChart('chartWasteReasons', surveyData.q6_labels, surveyData.q6_percentages, '% Selected', true);
+    // Q7
+    createDoughnutChart('chartExpiryCheck', surveyData.q7_labels, surveyData.q7_counts);
+    // Q8
+    createDoughnutChart('chartMealPlanning', surveyData.q8_labels, surveyData.q8_counts);
+    // Q9
+    createDoughnutChart('chartLeftoverAction', surveyData.q9_labels, surveyData.q9_counts);
+    // Q10
+    createDoughnutChart('chartStorageHabit', surveyData.q10_labels, surveyData.q10_counts);
+    // Q11
+    createBarChart('chartAwareness', surveyData.q11_labels, surveyData.q11_counts, 'Responses');
+    // Q12 (Percentages)
+    createBarChart('chartCurrentPractices', surveyData.q12_labels, surveyData.q12_percentages, '% Selected', true);
+    // Q13
+    createDoughnutChart('chartDigitalInterest', surveyData.q13_labels, surveyData.q13_counts);
+    // Q14 (Percentages)
+    createBarChart('chartUsefulFeatures', surveyData.q14_labels, surveyData.q14_percentages, '% Selected', true);
+    // Q15
+    createDoughnutChart('chartPriorityProblem', surveyData.q15_labels, surveyData.q15_counts);
+});
+</script>
+{% endif %}
+{% endblock %}
