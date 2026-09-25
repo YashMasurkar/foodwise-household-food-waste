@@ -9,6 +9,7 @@ import sqlite3
 import json
 import csv
 import io
+import re
 from datetime import datetime, date
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, g, Response, jsonify
@@ -784,6 +785,198 @@ def download_csv_template():
         headers={"Content-disposition": "attachment; filename=cep_survey_template.csv"}
     )
 
+# ==============================================================================
+# Survey CSV Header Aliases & Normalization Helpers
+# ==============================================================================
+CANONICAL_SURVEY_COLUMNS = [
+    'household_size', 'food_manager', 'waste_frequency', 'weekly_waste_amount',
+    'common_waste_category', 'waste_reasons', 'check_expiry_freq', 'meal_planning_freq',
+    'leftover_practice', 'storage_location', 'impact_awareness', 'current_practices',
+    'digital_tool_interest', 'useful_features', 'biggest_problem_to_solve',
+    'biggest_challenge', 'improvement_suggestions'
+]
+
+SURVEY_HEADER_ALIASES = {
+    # 1. Timestamp
+    'timestamp': 'submission_timestamp',
+    'submission_timestamp': 'submission_timestamp',
+    'submission timestamp': 'submission_timestamp',
+    
+    # 2. Q1 (Household Size)
+    'what is the size of your household?': 'household_size',
+    'what is the size of your household': 'household_size',
+    'household_size': 'household_size',
+    'household size': 'household_size',
+    
+    # 3. Q2 (Food Manager)
+    'who is mainly responsible for preparing food in your household?': 'food_manager',
+    'who is mainly responsible for preparing food in your household': 'food_manager',
+    'who mainly manages food preparation in your household?': 'food_manager',
+    'who mainly manages food preparation in your household': 'food_manager',
+    'food_manager': 'food_manager',
+    'food manager': 'food_manager',
+    
+    # 4. Q3 (Waste Frequency)
+    'how often does food get wasted in your household?': 'waste_frequency',
+    'how often does food get wasted in your household': 'waste_frequency',
+    'how often does food wastage occur?': 'waste_frequency',
+    'how often does food wastage occur': 'waste_frequency',
+    'waste_frequency': 'waste_frequency',
+    'waste frequency': 'waste_frequency',
+    
+    # 5. Q4 (Weekly Waste Amount)
+    'approximately how much food is wasted in your household per week?': 'weekly_waste_amount',
+    'approximately how much food is wasted in your household per week': 'weekly_waste_amount',
+    'approx. weekly wasted food quantity?': 'weekly_waste_amount',
+    'approx. weekly wasted food quantity': 'weekly_waste_amount',
+    'weekly_waste_amount': 'weekly_waste_amount',
+    'weekly waste amount': 'weekly_waste_amount',
+    
+    # 6. Q5 (Common Waste Category)
+    'which type of food is most commonly wasted in your household?': 'common_waste_category',
+    'which type of food is most commonly wasted in your household': 'common_waste_category',
+    'most commonly wasted food category?': 'common_waste_category',
+    'most commonly wasted food category': 'common_waste_category',
+    'common_waste_category': 'common_waste_category',
+    'common waste category': 'common_waste_category',
+    
+    # 7. Q6 (Waste Reasons - Multi)
+    'what are the main reasons food gets wasted in your household?': 'waste_reasons',
+    'what are the main reasons food gets wasted in your household': 'waste_reasons',
+    'what are the reasons for food wastage in your household?': 'waste_reasons',
+    'what are the reasons for food wastage in your household': 'waste_reasons',
+    'waste_reasons': 'waste_reasons',
+    'waste reasons': 'waste_reasons',
+    
+    # 8. Q7 (Check Expiry Freq)
+    'how often do you check expiry or best-before dates before using food?': 'check_expiry_freq',
+    'how often do you check expiry or best-before dates before using food': 'check_expiry_freq',
+    'how often do you check food expiry dates?': 'check_expiry_freq',
+    'how often do you check food expiry dates': 'check_expiry_freq',
+    'check_expiry_freq': 'check_expiry_freq',
+    'check expiry freq': 'check_expiry_freq',
+    
+    # 9. Q8 (Meal Planning Freq)
+    'how often does your household plan meals in advance?': 'meal_planning_freq',
+    'how often does your household plan meals in advance': 'meal_planning_freq',
+    'how often do you plan meals before cooking?': 'meal_planning_freq',
+    'how often do you plan meals before cooking': 'meal_planning_freq',
+    'meal_planning_freq': 'meal_planning_freq',
+    'meal planning freq': 'meal_planning_freq',
+    
+    # 10. Q9 (Leftover Practice)
+    'what does your household usually do with leftover food?': 'leftover_practice',
+    'what does your household usually do with leftover food': 'leftover_practice',
+    'leftover_practice': 'leftover_practice',
+    'leftover practice': 'leftover_practice',
+    
+    # 11. Q10 (Storage Location)
+    'where is food usually stored in your household?': 'storage_location',
+    'where is food usually stored in your household': 'storage_location',
+    'where do you usually store food items?': 'storage_location',
+    'where do you usually store food items': 'storage_location',
+    'storage_location': 'storage_location',
+    'storage location': 'storage_location',
+    
+    # 12. Q11 (Impact Awareness)
+    'how aware are you of the environmental and economic impact of food waste?': 'impact_awareness',
+    'how aware are you of the environmental and economic impact of food waste': 'impact_awareness',
+    'awareness of environmental & economic impact of food waste?': 'impact_awareness',
+    'awareness of environmental & economic impact of food waste': 'impact_awareness',
+    'impact_awareness': 'impact_awareness',
+    'impact awareness': 'impact_awareness',
+    
+    # 13. Q12 (Current Practices - Multi)
+    'which of the following practices does your household currently use to reduce food waste?': 'current_practices',
+    'which of the following practices does your household currently use to reduce food waste': 'current_practices',
+    'which practices do you currently use to reduce food waste?': 'current_practices',
+    'which practices do you currently use to reduce food waste': 'current_practices',
+    'current_practices': 'current_practices',
+    'current practices': 'current_practices',
+    
+    # 14. Q13 (Digital Tool Interest)
+    'would you use a digital app or tool to help reduce food waste at home?': 'digital_tool_interest',
+    'would you use a digital app or tool to help reduce food waste at home': 'digital_tool_interest',
+    'would you use a digital application to reduce food waste?': 'digital_tool_interest',
+    'would you use a digital application to reduce food waste': 'digital_tool_interest',
+    'digital_tool_interest': 'digital_tool_interest',
+    'digital tool interest': 'digital_tool_interest',
+    
+    # 15. Q14 (Useful Features - Multi)
+    'which features would be most useful in a food-waste reduction application?': 'useful_features',
+    'which features would be most useful in a food-waste reduction application': 'useful_features',
+    'which digital features would be most useful?': 'useful_features',
+    'which digital features would be most useful': 'useful_features',
+    'useful_features': 'useful_features',
+    'useful features': 'useful_features',
+    
+    # 16. Q15 (Biggest Problem to Solve)
+    'which household food-waste problem would you most like a digital solution to help solve?': 'biggest_problem_to_solve',
+    'which household food-waste problem would you most like a digital solution to help solve': 'biggest_problem_to_solve',
+    "problem you'd most like a digital tool to solve?": 'biggest_problem_to_solve',
+    "problem you'd most like a digital tool to solve": 'biggest_problem_to_solve',
+    'biggest_problem_to_solve': 'biggest_problem_to_solve',
+    'biggest problem to solve': 'biggest_problem_to_solve',
+    
+    # 17. Q16 (Biggest Challenge)
+    'what is the biggest challenge you face when trying to reduce food waste at home?': 'biggest_challenge',
+    'what is the biggest challenge you face when trying to reduce food waste at home': 'biggest_challenge',
+    'what is the biggest challenge you face in reducing food waste at home?': 'biggest_challenge',
+    'what is the biggest challenge you face in reducing food waste at home': 'biggest_challenge',
+    'biggest_challenge': 'biggest_challenge',
+    'biggest challenge': 'biggest_challenge',
+    
+    # 18. Q17 (Suggestions - Optional)
+    'do you have any suggestions for reducing food waste or improving a digital food-waste management solution?': 'improvement_suggestions',
+    'do you have any suggestions for reducing food waste or improving a digital food-waste management solution': 'improvement_suggestions',
+    'do you have any suggestions for improving household food-waste management?': 'improvement_suggestions',
+    'do you have any suggestions for improving household food-waste management': 'improvement_suggestions',
+    'improvement_suggestions': 'improvement_suggestions',
+    'improvement suggestions': 'improvement_suggestions',
+}
+
+def normalize_survey_option(val, allowed_options):
+    """Normalizes option values (e.g. hyphens/en-dashes, casing, whitespace) to match allowed choices."""
+    if not val:
+        return ''
+    val_clean = str(val).strip()
+    if val_clean in allowed_options:
+        return val_clean
+    # Normalize dashes/hyphens
+    norm_val = val_clean.replace('–', '-').replace('—', '-').lower()
+    for opt in allowed_options:
+        if opt.replace('–', '-').replace('—', '-').lower() == norm_val:
+            return opt
+    # Match case-insensitively
+    for opt in allowed_options:
+        if opt.lower() == val_clean.lower():
+            return opt
+    return val_clean
+
+def parse_survey_multiselect(val, allowed_options=None):
+    """Parses multi-select checkboxes separated by semicolons or commas into a clean list."""
+    if not val:
+        return []
+    val_str = str(val).strip()
+    if not val_str:
+        return []
+    # Check if already a JSON list
+    if val_str.startswith('[') and val_str.endswith(']'):
+        try:
+            items = json.loads(val_str)
+            if isinstance(items, list):
+                res = [str(x).strip() for x in items if str(x).strip()]
+                if allowed_options:
+                    res = [normalize_survey_option(x, allowed_options) for x in res]
+                return res
+        except (json.JSONDecodeError, TypeError):
+            pass
+    # Split by semicolon or comma
+    items = [x.strip() for x in re.split(r'[;,]', val_str) if x.strip()]
+    if allowed_options:
+        items = [normalize_survey_option(x, allowed_options) for x in items]
+    return items
+
 @app.route('/survey/data/import-csv', methods=['POST'])
 def import_survey_csv():
     if 'csv_file' not in request.files:
@@ -796,60 +989,107 @@ def import_survey_csv():
         return redirect(url_for('survey_data'))
 
     try:
-        stream = io.StringIO(file.stream.read().decode("utf-8-sig"), newline=None)
-        reader = csv.DictReader(stream)
+        raw_text = file.stream.read().decode("utf-8-sig", errors="replace")
+        stream = io.StringIO(raw_text, newline=None)
+        reader = csv.reader(stream)
         
-        required_cols = [
-            'household_size', 'food_manager', 'waste_frequency', 'weekly_waste_amount',
-            'common_waste_category', 'waste_reasons', 'check_expiry_freq', 'meal_planning_freq',
-            'leftover_practice', 'storage_location', 'impact_awareness', 'current_practices',
-            'digital_tool_interest', 'useful_features', 'biggest_problem_to_solve',
-            'biggest_challenge'
-        ]
-
-        if not reader.fieldnames or not all(col in reader.fieldnames for col in required_cols):
-            flash('Invalid CSV headers. Please ensure all 16 required column names are present.', 'danger')
+        headers = next(reader, None)
+        if not headers:
+            flash('Uploaded CSV file is empty.', 'danger')
             return redirect(url_for('survey_data'))
 
-        imported_count = 0
+        # Map each CSV column index to its canonical field name
+        col_to_canonical = {}
+        for idx, h in enumerate(headers):
+            h_norm = re.sub(r'\s+', ' ', (h or '').strip()).lower()
+            if h_norm in SURVEY_HEADER_ALIASES:
+                col_to_canonical[idx] = SURVEY_HEADER_ALIASES[h_norm]
+            else:
+                # Partial match for question headers
+                for alias_k, canonical_v in SURVEY_HEADER_ALIASES.items():
+                    if alias_k in h_norm or h_norm in alias_k:
+                        col_to_canonical[idx] = canonical_v
+                        break
+
+        # Positional fallbacks for standard 18-col Google Form or 17-col template
+        if len(col_to_canonical) < 10 and len(headers) == 18:
+            positional_map = [
+                'submission_timestamp', 'household_size', 'food_manager', 'waste_frequency',
+                'weekly_waste_amount', 'common_waste_category', 'waste_reasons', 'check_expiry_freq',
+                'meal_planning_freq', 'leftover_practice', 'storage_location', 'impact_awareness',
+                'current_practices', 'digital_tool_interest', 'useful_features',
+                'biggest_problem_to_solve', 'biggest_challenge', 'improvement_suggestions'
+            ]
+            for idx, canonical_v in enumerate(positional_map):
+                col_to_canonical[idx] = canonical_v
+        elif len(col_to_canonical) < 10 and len(headers) == 17:
+            for idx, canonical_v in enumerate(CANONICAL_SURVEY_COLUMNS):
+                col_to_canonical[idx] = canonical_v
+
+        # Validate that essential survey fields are mapped
+        core_fields = ['household_size', 'food_manager', 'waste_frequency', 'weekly_waste_amount']
+        mapped_canonicals = set(col_to_canonical.values())
+        if not all(cf in mapped_canonicals for cf in core_fields):
+            flash('CSV headers could not be recognized. Please check column format or use the official template.', 'danger')
+            return redirect(url_for('survey_data'))
+
         db = get_db()
+        imported_count = 0
+        skipped_duplicates = 0
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        for row_idx, row in enumerate(reader, start=1):
-            h_size = (row.get('household_size') or '').strip()
-            f_mgr = (row.get('food_manager') or '').strip()
-            w_freq = (row.get('waste_frequency') or '').strip()
-            w_amt = (row.get('weekly_waste_amount') or '').strip()
-            w_cat = (row.get('common_waste_category') or '').strip()
-            
-            # Reasons (comma-split)
-            reasons_raw = (row.get('waste_reasons') or '').split(',')
-            reasons_list = [r.strip() for r in reasons_raw if r.strip()]
-            
-            chk_exp = (row.get('check_expiry_freq') or '').strip()
-            meal_plan = (row.get('meal_planning_freq') or '').strip()
-            left_prac = (row.get('leftover_practice') or '').strip()
-            store_loc = (row.get('storage_location') or '').strip()
-            awareness = (row.get('impact_awareness') or '').strip()
-            
-            # Practices (comma-split)
-            practices_raw = (row.get('current_practices') or '').split(',')
-            practices_list = [p.strip() for p in practices_raw if p.strip()]
-            
-            dig_int = (row.get('digital_tool_interest') or '').strip()
-            
-            # Features (comma-split)
-            features_raw = (row.get('useful_features') or '').split(',')
-            features_list = [f.strip() for f in features_raw if f.strip()]
-            
-            big_prob = (row.get('biggest_problem_to_solve') or '').strip()
-            challenge = (row.get('biggest_challenge') or '').strip()
-            suggestions = (row.get('improvement_suggestions') or '').strip()
+        for row_idx, row in enumerate(reader, start=2):
+            if not row or not any(cell.strip() for cell in row):
+                continue  # Skip completely blank lines
 
-            if not (h_size and f_mgr and w_freq and w_amt and w_cat and reasons_list and 
-                    chk_exp and meal_plan and left_prac and store_loc and awareness and 
-                    practices_list and dig_int and features_list and big_prob and challenge):
-                flash(f'Row #{row_idx} contained empty mandatory fields and was skipped.', 'warning')
+            # Extract fields by mapped canonical name
+            row_dict = {}
+            for col_idx, val in enumerate(row):
+                if col_idx in col_to_canonical:
+                    row_dict[col_to_canonical[col_idx]] = val.strip()
+
+            # Values extraction & normalization
+            sub_ts = row_dict.get('submission_timestamp') or now_str
+            h_size = normalize_survey_option(row_dict.get('household_size', ''), ALLOWED_SURVEY_VALUES['household_size'])
+            f_mgr = normalize_survey_option(row_dict.get('food_manager', ''), ALLOWED_SURVEY_VALUES['food_manager'])
+            w_freq = normalize_survey_option(row_dict.get('waste_frequency', ''), ALLOWED_SURVEY_VALUES['waste_frequency'])
+            w_amt = normalize_survey_option(row_dict.get('weekly_waste_amount', ''), ALLOWED_SURVEY_VALUES['weekly_waste_amount'])
+            w_cat = normalize_survey_option(row_dict.get('common_waste_category', ''), ALLOWED_SURVEY_VALUES['common_waste_category'])
+            
+            reasons_list = parse_survey_multiselect(row_dict.get('waste_reasons', ''), ALLOWED_SURVEY_VALUES['waste_reasons'])
+            
+            chk_exp = normalize_survey_option(row_dict.get('check_expiry_freq', ''), ALLOWED_SURVEY_VALUES['check_expiry_freq'])
+            meal_plan = normalize_survey_option(row_dict.get('meal_planning_freq', ''), ALLOWED_SURVEY_VALUES['meal_planning_freq'])
+            left_prac = normalize_survey_option(row_dict.get('leftover_practice', ''), ALLOWED_SURVEY_VALUES['leftover_practice'])
+            store_loc = normalize_survey_option(row_dict.get('storage_location', ''), ALLOWED_SURVEY_VALUES['storage_location'])
+            awareness = normalize_survey_option(row_dict.get('impact_awareness', ''), ALLOWED_SURVEY_VALUES['impact_awareness'])
+            
+            practices_list = parse_survey_multiselect(row_dict.get('current_practices', ''), ALLOWED_SURVEY_VALUES['current_practices'])
+            
+            dig_int = normalize_survey_option(row_dict.get('digital_tool_interest', ''), ALLOWED_SURVEY_VALUES['digital_tool_interest'])
+            
+            features_list = parse_survey_multiselect(row_dict.get('useful_features', ''), ALLOWED_SURVEY_VALUES['useful_features'])
+            
+            big_prob = normalize_survey_option(row_dict.get('biggest_problem_to_solve', ''), ALLOWED_SURVEY_VALUES['biggest_problem_to_solve'])
+            challenge = row_dict.get('biggest_challenge', '').strip()
+            suggestions = row_dict.get('improvement_suggestions', '').strip()
+
+            reasons_json = json.dumps(reasons_list)
+            practices_json = json.dumps(practices_list)
+            features_json = json.dumps(features_list)
+
+            # Prevent duplicate entries if CSV import is run multiple times
+            existing = db.execute("""
+                SELECT id FROM survey_responses 
+                WHERE (submission_timestamp = ? AND household_size = ? AND food_manager = ? AND waste_frequency = ?)
+                   OR (household_size = ? AND food_manager = ? AND waste_frequency = ? AND weekly_waste_amount = ? AND common_waste_category = ? AND waste_reasons = ? AND biggest_challenge = ?)
+            """, (
+                sub_ts, h_size, f_mgr, w_freq,
+                h_size, f_mgr, w_freq, w_amt, w_cat, reasons_json, challenge
+            )).fetchone()
+
+            if existing:
+                skipped_duplicates += 1
                 continue
 
             db.execute("""
@@ -860,18 +1100,23 @@ def import_survey_csv():
                     biggest_problem_to_solve, biggest_challenge, improvement_suggestions
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                now_str, h_size, f_mgr, w_freq, w_amt,
-                w_cat, json.dumps(reasons_list), chk_exp, meal_plan, left_prac,
-                store_loc, awareness, json.dumps(practices_list), dig_int, json.dumps(features_list),
+                sub_ts, h_size, f_mgr, w_freq, w_amt,
+                w_cat, reasons_json, chk_exp, meal_plan, left_prac,
+                store_loc, awareness, practices_json, dig_int, features_json,
                 big_prob, challenge, suggestions
             ))
             imported_count += 1
 
         db.commit()
         if imported_count > 0:
-            flash(f'Successfully imported {imported_count} survey responses from CSV.', 'success')
+            msg = f'Successfully imported {imported_count} survey responses from CSV.'
+            if skipped_duplicates > 0:
+                msg += f' ({skipped_duplicates} duplicate responses skipped).'
+            flash(msg, 'success')
+        elif skipped_duplicates > 0:
+            flash(f'All {skipped_duplicates} rows in the CSV were already imported previously (duplicates skipped).', 'info')
         else:
-            flash('No valid survey rows could be imported.', 'danger')
+            flash('No valid survey rows could be imported from the CSV.', 'danger')
 
     except Exception as e:
         flash(f'Error reading CSV file: {str(e)}', 'danger')

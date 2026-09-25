@@ -26,84 +26,115 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-xl navbar-custom sticky-top">
-        <div class="container-fluid px-lg-4">
+    <!-- Navigation Bar
+         THREE-STATE RESPONSIVE NAVBAR:
+         STATE 1 — DESKTOP-FIT       (> 1200px, content fits)    : desktopNavScroll shows all, no scrollbar
+         STATE 2 — DESKTOP-SCROLL    (> 1200px, content overflows): desktopNavScroll scrolls horizontally only
+         STATE 3 — HAMBURGER         (<= 1200px)                  : mobileNavDrawer via Bootstrap collapse
+         
+         navbar-expand-xl → Bootstrap collapse JS fires at < 1200px (xl = 1200px breakpoint).
+         CSS hides desktopNavScroll below 1200px, hides mobileNavDrawer above 1200px.
+    -->
+    <!-- Navigation Bar: Clean Responsive Architecture (>=1500px Full Horizontal, <1500px Hamburger) -->
+    <nav class="navbar navbar-custom sticky-top" id="mainNavbar">
+        <div class="container-fluid px-3 px-xl-4">
+
+            <!-- Brand — always visible -->
             <a class="navbar-brand" href="{{ url_for('index') }}">
                 <span class="brand-icon"><i class="bi bi-tree-fill"></i></span>
                 <span>Food<span class="text-success">Wise</span></span>
             </a>
-            
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+
+            <!-- Hamburger Toggler (visible < 1500px) -->
+            <button class="navbar-toggler border-0 shadow-none p-2"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarCollapse"
+                    aria-controls="navbarCollapse"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto mb-2 mb-xl-0 ms-xl-3 gap-1">
+
+            <!-- Collapsible Navbar Content (expanded >= 1500px, collapsed < 1500px) -->
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-custom-0">
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
-                            <i class="bi bi-house-door me-1"></i> Home
+                            <i class="bi bi-house-door me-1"></i>Home
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'inventory' %}active{% endif %}" href="{{ url_for('inventory') }}">
-                            <i class="bi bi-boxes me-1"></i> Food Inventory
+                            <i class="bi bi-boxes me-1"></i>Food Inventory
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'expiry_tracker' %}active{% endif %}" href="{{ url_for('expiry_tracker') }}">
-                            <i class="bi bi-hourglass-split me-1"></i> Expiry Tracker
+                            <i class="bi bi-hourglass-split me-1"></i>Expiry Tracker
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'meal_planner' %}active{% endif %}" href="{{ url_for('meal_planner') }}">
-                            <i class="bi bi-calendar-week me-1"></i> Meal Planner
+                            <i class="bi bi-calendar-week me-1"></i>Meal Planner
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'leftovers' %}active{% endif %}" href="{{ url_for('leftovers') }}">
-                            <i class="bi bi-arrow-repeat me-1"></i> Leftovers
+                            <i class="bi bi-arrow-repeat me-1"></i>Leftovers
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'waste_tracking' %}active{% endif %}" href="{{ url_for('waste_tracking') }}">
-                            <i class="bi bi-trash3 me-1"></i> Waste Tracking
+                            <i class="bi bi-trash3 me-1"></i>Waste Tracking
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if active_page in ['survey_data', 'survey_results', 'community_impact'] %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-clipboard-data me-1"></i> Research & Survey
+                        <a class="nav-link dropdown-toggle {% if active_page in ['survey_data', 'survey_results', 'community_impact'] %}active{% endif %}"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-clipboard-data me-1"></i>Research &amp; Survey
                         </a>
                         <ul class="dropdown-menu border-0 shadow-sm">
-                            <li><a class="dropdown-item {% if active_page == 'survey_data' %}active{% endif %}" href="{{ url_for('survey_data') }}"><i class="bi bi-pencil-square me-2 text-primary"></i> Survey Data Entry & Import</a></li>
-                            <li><a class="dropdown-item {% if active_page == 'survey_results' %}active{% endif %}" href="{{ url_for('survey_results') }}"><i class="bi bi-pie-chart-fill me-2 text-success"></i> Survey Results & Analytics</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item {% if active_page == 'community_impact' %}active{% endif %}" href="{{ url_for('community_impact') }}"><i class="bi bi-people-fill me-2 text-info"></i> Community Engagement Study</a></li>
+                            <li><a class="dropdown-item {% if active_page == 'survey_data' %}active{% endif %}" href="{{ url_for('survey_data') }}">
+                                <i class="bi bi-pencil-square me-2 text-primary"></i>Survey Data Entry &amp; Import
+                            </a></li>
+                            <li><a class="dropdown-item {% if active_page == 'survey_results' %}active{% endif %}" href="{{ url_for('survey_results') }}">
+                                <i class="bi bi-pie-chart-fill me-2 text-success"></i>Survey Results &amp; Analytics
+                            </a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item {% if active_page == 'community_impact' %}active{% endif %}" href="{{ url_for('community_impact') }}">
+                                <i class="bi bi-people-fill me-2 text-info"></i>Community Engagement Study
+                            </a></li>
                         </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'awareness' %}active{% endif %}" href="{{ url_for('awareness') }}">
-                            <i class="bi bi-lightbulb me-1"></i> Awareness Tips
+                            <i class="bi bi-lightbulb me-1"></i>Awareness Tips
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'about' %}active{% endif %}" href="{{ url_for('about') }}">
-                            <i class="bi bi-info-circle me-1"></i> About Project
+                            <i class="bi bi-info-circle me-1"></i>About Project
                         </a>
                     </li>
                 </ul>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{{ url_for('inventory') }}" class="btn btn-primary-custom btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i> Add Food Item
+
+                <!-- Add Food Item CTA -->
+                <div class="nav-cta-wrapper">
+                    <a href="{{ url_for('inventory') }}"
+                       class="btn btn-primary-custom text-nowrap d-inline-flex align-items-center justify-content-center"
+                       id="desktopAddFoodBtn">
+                        <i class="bi bi-plus-circle me-1"></i>Add Food Item
                     </a>
                 </div>
-            </div>
-        </div>
+            </div><!-- /#navbarCollapse -->
+
+        </div><!-- /.container-fluid -->
     </nav>
 
     <!-- Flash Messages Container -->
@@ -150,7 +181,7 @@
                     </ul>
                 </div>
                 <div class="col-6 col-lg-2">
-                    <h6>Analytics & Research</h6>
+                    <h6>Analytics &amp; Research</h6>
                     <ul class="list-unstyled small mb-0 d-flex flex-column gap-2">
                         <li><a href="{{ url_for('dashboard') }}">System Dashboard</a></li>
                         <li><a href="{{ url_for('waste_tracking') }}">Waste Tracking</a></li>
@@ -159,19 +190,19 @@
                     </ul>
                 </div>
                 <div class="col-lg-4">
-                    <h6>Research Ethics & Study</h6>
+                    <h6>Research Ethics &amp; Study</h6>
                     <p class="small text-secondary mb-2">
                         Household research survey conducted through verified Google Forms. All statistical charts reflect strictly real data entered into the system.
                     </p>
                     <div class="d-flex gap-2">
-                        <a href="{{ url_for('awareness') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-lightbulb me-1"></i> Awareness Tips</a>
-                        <a href="{{ url_for('about') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-info-circle me-1"></i> Project Details</a>
+                        <a href="{{ url_for('awareness') }}" class="btn btn-outline-light btn-sm"><i class="bi bi-lightbulb me-1"></i>Awareness Tips</a>
+                        <a href="{{ url_for('about') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-info-circle me-1"></i>Project Details</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom text-secondary">
                 <p class="mb-0">
-                    &copy; 2026 FoodWise &bull; Smart Household Food Management & Waste Reduction System
+                    &copy; 2026 FoodWise &bull; Smart Household Food Management &amp; Waste Reduction System
                 </p>
             </div>
         </div>
