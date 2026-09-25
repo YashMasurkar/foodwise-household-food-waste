@@ -18,6 +18,7 @@ CREATE TABLE food_items (
     expiry_date TEXT NOT NULL,
     storage_type TEXT NOT NULL,
     notes TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -56,6 +57,7 @@ CREATE TABLE waste_records (
     reason TEXT NOT NULL,
     estimated_value REAL NOT NULL DEFAULT 0.0 CHECK(estimated_value >= 0),
     remarks TEXT,
+    food_item_id INTEGER REFERENCES food_items(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

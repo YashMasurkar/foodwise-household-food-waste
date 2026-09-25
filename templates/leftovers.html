@@ -51,7 +51,7 @@
                                     <th>Prepared On</th>
                                     <th>Consume By</th>
                                     <th>Status vs Target</th>
-                                    <th class="text-end">Actions</th>
+                                    <th class="text-end text-nowrap" style="min-width: 95px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -69,24 +69,26 @@
                                     <td><strong>{{ item.consume_before }}</strong></td>
                                     <td>
                                         {% if item.days_left < 0 %}
-                                            <span class="badge-status badge-expired"><i class="bi bi-exclamation-octagon"></i> Past entered date ({{ -item.days_left }}d)</span>
+                                            <span class="badge-status badge-expired"><i class="bi bi-exclamation-octagon"></i> Target Passed ({{ -item.days_left }}d ago)</span>
                                         {% elif item.days_left == 0 %}
                                             <span class="badge-status badge-expiring-today"><i class="bi bi-alarm"></i> Consume Today</span>
                                         {% elif item.days_left <= 1 %}
                                             <span class="badge-status badge-expiring-soon"><i class="bi bi-clock"></i> Consume Soon ({{ item.days_left }}d)</span>
                                         {% else %}
-                                            <span class="badge-status badge-fresh"><i class="bi bi-check-circle"></i> Within target ({{ item.days_left }}d)</span>
+                                            <span class="badge-status badge-fresh"><i class="bi bi-check-circle"></i> Within target ({{ item.days_left }}d left)</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openEditLeftoverModal({{ item|tojson }})">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <form method="POST" action="{{ url_for('delete_leftover', leftover_id=item.id) }}" class="d-inline" onsubmit="return confirm('Remove this leftover record?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                <i class="bi bi-trash"></i>
+                                    <td class="text-end text-nowrap">
+                                        <div class="table-actions">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" title="Edit" onclick='openEditLeftoverModal({{ item|tojson }})'>
+                                                <i class="bi bi-pencil"></i>
                                             </button>
-                                        </form>
+                                            <form method="POST" action="{{ url_for('delete_leftover', leftover_id=item.id) }}" class="m-0 p-0 d-inline-block" onsubmit="return confirm('Remove this leftover record?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -305,6 +307,31 @@
 
 {% block extra_scripts %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    var prepAdd = document.getElementById('datePrepared');
+    var consAdd = document.getElementById('consumeBefore');
+    if (prepAdd && consAdd) {
+        consAdd.min = prepAdd.value;
+        prepAdd.addEventListener('change', function() {
+            consAdd.min = prepAdd.value;
+            if (consAdd.value && consAdd.value < prepAdd.value) {
+                consAdd.value = prepAdd.value;
+            }
+        });
+    }
+
+    var prepEdit = document.getElementById('editLeftoverDatePrepared');
+    var consEdit = document.getElementById('editLeftoverConsumeBefore');
+    if (prepEdit && consEdit) {
+        prepEdit.addEventListener('change', function() {
+            consEdit.min = prepEdit.value;
+            if (consEdit.value && consEdit.value < prepEdit.value) {
+                consEdit.value = prepEdit.value;
+            }
+        });
+    }
+});
+
 function openEditLeftoverModal(item) {
     document.getElementById('editLeftoverForm').action = "/leftovers/edit/" + item.id;
     document.getElementById('editLeftoverFoodName').value = item.food_name;
@@ -312,10 +339,11 @@ function openEditLeftoverModal(item) {
     document.getElementById('editLeftoverUnit').value = item.unit;
     document.getElementById('editLeftoverDatePrepared').value = item.date_prepared;
     document.getElementById('editLeftoverConsumeBefore').value = item.consume_before;
+    document.getElementById('editLeftoverConsumeBefore').min = item.date_prepared;
     document.getElementById('editLeftoverStorageMethod').value = item.storage_method;
     document.getElementById('editLeftoverNotes').value = item.notes || '';
 
-    const modal = new bootstrap.Modal(document.getElementById('editLeftoverModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editLeftoverModal'));
     modal.show();
 }
 </script>

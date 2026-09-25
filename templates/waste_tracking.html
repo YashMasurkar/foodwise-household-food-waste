@@ -21,28 +21,28 @@
     <!-- Waste KPI Summary Cards -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
-            <div class="stat-card">
+            <div class="stat-card h-100">
                 <div class="stat-icon bg-expired-light"><i class="bi bi-trash3-fill text-danger"></i></div>
                 <div class="stat-value text-danger">{{ waste_records|length }}</div>
                 <div class="stat-label">Total Discard Incidents</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="stat-card">
+            <div class="stat-card h-100">
                 <div class="stat-icon bg-info-light-custom"><i class="bi bi-calculator text-primary"></i></div>
                 <div class="stat-value">{{ "%.2f"|format(total_weight_kg) }} <small class="fs-6 text-muted">kg</small></div>
                 <div class="stat-label">Total Est. Weight (kg)</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="stat-card">
+            <div class="stat-card h-100">
                 <div class="stat-icon bg-today-light"><i class="bi bi-cash-stack text-warning"></i></div>
                 <div class="stat-value text-danger">₹{{ "%.2f"|format(total_monetary_loss) }}</div>
                 <div class="stat-label">Estimated Monetary Loss*</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="stat-card">
+            <div class="stat-card h-100">
                 <div class="stat-icon bg-fresh-light"><i class="bi bi-tags text-success"></i></div>
                 <div class="stat-value text-truncate fs-4" title="{{ top_category or 'None' }}">{{ top_category or '—' }}</div>
                 <div class="stat-label">Top Discard Category</div>
@@ -157,7 +157,7 @@
                             <th>Reason for Waste</th>
                             <th>Estimated Value</th>
                             <th>Remarks</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end text-nowrap" style="min-width: 95px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -174,15 +174,17 @@
                             </td>
                             <td><span class="text-danger fw-bold">₹{{ "%.2f"|format(record.estimated_value) }}*</span></td>
                             <td class="small text-muted">{{ record.remarks or '—' }}</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openEditWasteModal({{ record|tojson }})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form method="POST" action="{{ url_for('delete_waste', waste_id=record.id) }}" class="d-inline" onsubmit="return confirm('Delete this waste record?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
+                            <td class="text-end text-nowrap">
+                                <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Edit" onclick='openEditWasteModal({{ record|tojson }})'>
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                </form>
+                                    <form method="POST" action="{{ url_for('delete_waste', waste_id=record.id) }}" class="m-0 p-0 d-inline-block" onsubmit="return confirm('Delete this waste record?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -225,7 +227,19 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label" for="wasteFoodItem">Food Item <span class="text-danger">*</span></label>
+                        {% if active_inventory %}
+                        <select id="wasteInventorySelect" class="form-select mb-2" onchange="prefillFromInventory(this)">
+                            <option value="">— Select from inventory (optional) —</option>
+                            {% for inv in active_inventory %}
+                            <option value="{{ inv.id }}" data-name="{{ inv.name }}" data-category="{{ inv.category }}" data-qty="{{ inv.quantity }}" data-unit="{{ inv.unit }}"
+                                {% if request.args.get('prefill_id')|string == inv.id|string %}selected{% endif %}>
+                                {{ inv.name }} ({{ inv.quantity }} {{ inv.unit }}) — {{ inv.category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
                         <input type="text" name="food_item" id="wasteFoodItem" class="form-control" value="{{ request.args.get('prefill_name', '') }}" placeholder="e.g., Bread, Milk, Cooked Rice" required>
+                        <input type="hidden" name="food_item_id" id="wasteFoodItemId" value="{{ request.args.get('prefill_id', '') }}">
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
@@ -418,8 +432,38 @@ function openEditWasteModal(record) {
     document.getElementById('editEstimatedValue').value = record.estimated_value;
     document.getElementById('editWasteRemarks').value = record.remarks || '';
 
-    const modal = new bootstrap.Modal(document.getElementById('editWasteModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editWasteModal'));
     modal.show();
+}
+
+function prefillFromInventory(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) {
+        document.getElementById('wasteFoodItemId').value = '';
+        return;
+    }
+    document.getElementById('wasteFoodItem').value = opt.getAttribute('data-name') || '';
+    document.getElementById('wasteFoodItemId').value = opt.value;
+    var catSel = document.getElementById('wasteCategory');
+    if (catSel) {
+        var catVal = opt.getAttribute('data-category') || '';
+        for (var i = 0; i < catSel.options.length; i++) {
+            if (catSel.options[i].value === catVal) {
+                catSel.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    var unitSel = document.getElementById('wasteUnit');
+    if (unitSel) {
+        var unitVal = opt.getAttribute('data-unit') || '';
+        for (var i = 0; i < unitSel.options.length; i++) {
+            if (unitSel.options[i].value === unitVal) {
+                unitSel.selectedIndex = i;
+                break;
+            }
+        }
+    }
 }
 </script>
 {% endblock %}

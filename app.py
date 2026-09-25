@@ -51,6 +51,37 @@ def init_db():
                 db.cursor().executescript(f.read())
             db.commit()
             print("Database initialized successfully from schema.sql.")
+    else:
+        # Auto-migrate: add missing columns to existing databases
+        existing_cols = {row[1] for row in cursor.execute("PRAGMA table_info(food_items);").fetchall()}
+        if 'status' not in existing_cols:
+            cursor.execute("ALTER TABLE food_items ADD COLUMN status TEXT NOT NULL DEFAULT 'active';")
+            db.commit()
+        existing_waste_cols = {row[1] for row in cursor.execute("PRAGMA table_info(waste_records);").fetchall()}
+        if 'food_item_id' not in existing_waste_cols:
+            cursor.execute("ALTER TABLE waste_records ADD COLUMN food_item_id INTEGER REFERENCES food_items(id);")
+            db.commit()
+
+        # Ensure historical consistency: mark items that were discarded in waste_records as 'discarded'
+        cursor.execute("""
+            UPDATE food_items
+            SET status = 'discarded'
+            WHERE status = 'active' AND (
+                id IN (SELECT food_item_id FROM waste_records WHERE food_item_id IS NOT NULL)
+                OR LOWER(TRIM(name)) IN (SELECT LOWER(TRIM(food_item)) FROM waste_records)
+            );
+        """)
+        # Link waste records that have NULL food_item_id to the matching food item record
+        cursor.execute("""
+            UPDATE waste_records
+            SET food_item_id = (
+                SELECT id FROM food_items
+                WHERE LOWER(TRIM(food_items.name)) = LOWER(TRIM(waste_records.food_item))
+                LIMIT 1
+            )
+            WHERE food_item_id IS NULL;
+        """)
+        db.commit()
 
 @app.before_request
 def ensure_db_initialized():
@@ -106,8 +137,8 @@ def index():
 def dashboard():
     db = get_db()
 
-    # 1. Food Items Analysis
-    food_rows = db.execute("SELECT * FROM food_items ORDER BY expiry_date ASC").fetchall()
+    # 1. Food Items Analysis (active inventory only)
+    food_rows = db.execute("SELECT * FROM food_items WHERE status = 'active' ORDER BY expiry_date ASC").fetchall()
     total_items = len(food_rows)
     expiring_soon_count = 0
     expired_count = 0
@@ -189,7 +220,7 @@ def inventory():
     sort_by = request.args.get('sort', 'expiry_asc')
     db = get_db()
 
-    query = "SELECT * FROM food_items"
+    query = "SELECT * FROM food_items WHERE status = 'active'"
     if sort_by == 'expiry_desc':
         query += " ORDER BY expiry_date DESC"
     elif sort_by == 'name_asc':
@@ -241,8 +272,8 @@ def add_food():
 
     db = get_db()
     db.execute("""
-        INSERT INTO food_items (name, category, quantity, unit, purchase_date, expiry_date, storage_type, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO food_items (name, category, quantity, unit, purchase_date, expiry_date, storage_type, notes, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
     """, (name, category, quantity, unit, purchase_date, expiry_date, storage_type, notes))
     db.commit()
 
@@ -276,6 +307,11 @@ def edit_food(item_id):
         return redirect(url_for('inventory'))
 
     db = get_db()
+    existing = db.execute("SELECT id FROM food_items WHERE id = ?", (item_id,)).fetchone()
+    if not existing:
+        flash('Food item not found. It may have already been deleted.', 'danger')
+        return redirect(url_for('inventory'))
+
     db.execute("""
         UPDATE food_items
         SET name = ?, category = ?, quantity = ?, unit = ?, purchase_date = ?, expiry_date = ?, storage_type = ?, notes = ?
@@ -301,7 +337,7 @@ def delete_food(item_id):
 @app.route('/expiry-tracker')
 def expiry_tracker():
     db = get_db()
-    rows = db.execute("SELECT * FROM food_items ORDER BY expiry_date ASC").fetchall()
+    rows = db.execute("SELECT * FROM food_items WHERE status = 'active' ORDER BY expiry_date ASC").fetchall()
 
     all_items = []
     expired_items = []
@@ -350,7 +386,7 @@ def meal_planner():
         meal_plans.append(m)
 
     # Dynamic suggestions based on active inventory items expiring in <= 3 days
-    food_rows = db.execute("SELECT * FROM food_items ORDER BY expiry_date ASC").fetchall()
+    food_rows = db.execute("SELECT * FROM food_items WHERE status = 'active' ORDER BY expiry_date ASC").fetchall()
     expiring_suggestions = []
     for row in food_rows:
         item = dict(row)
@@ -359,12 +395,25 @@ def meal_planner():
             item['days_left'] = days_left
             expiring_suggestions.append(item)
 
+    # All active inventory items for the ingredient checkbox selection
+    inventory_rows = db.execute(
+        "SELECT id, name, category, quantity, unit, expiry_date FROM food_items WHERE status = 'active' ORDER BY name ASC"
+    ).fetchall()
+    inventory_items = []
+    for r in inventory_rows:
+        item = dict(r)
+        days_left, status = calculate_expiry_status(item['expiry_date'])
+        item['days_left'] = days_left
+        item['status_label'] = status
+        inventory_items.append(item)
+
     today_str = date.today().strftime('%Y-%m-%d')
     return render_template(
         'meal_planner.html',
         active_page='meal_planner',
         meal_plans=meal_plans,
         expiring_suggestions=expiring_suggestions,
+        inventory_items=inventory_items,
         today_date=today_str
     )
 
@@ -415,6 +464,11 @@ def edit_meal(meal_id):
         return redirect(url_for('meal_planner'))
 
     db = get_db()
+    existing = db.execute("SELECT id FROM meal_plans WHERE id = ?", (meal_id,)).fetchone()
+    if not existing:
+        flash('Meal plan not found. It may have already been deleted.', 'danger')
+        return redirect(url_for('meal_planner'))
+
     db.execute("""
         UPDATE meal_plans
         SET meal_name = ?, ingredients = ?, meal_type = ?, meal_date = ?, notes = ?
@@ -470,8 +524,11 @@ def add_leftover():
         if quantity <= 0:
             flash('Quantity must be greater than zero.', 'danger')
             return redirect(url_for('leftovers'))
-        datetime.strptime(date_prepared, '%Y-%m-%d')
-        datetime.strptime(consume_before, '%Y-%m-%d')
+        prep_dt = datetime.strptime(date_prepared, '%Y-%m-%d')
+        consume_dt = datetime.strptime(consume_before, '%Y-%m-%d')
+        if consume_dt < prep_dt:
+            flash('Target consume-before date cannot be earlier than the preparation date.', 'danger')
+            return redirect(url_for('leftovers'))
     except ValueError:
         flash('Invalid quantity or date format.', 'danger')
         return redirect(url_for('leftovers'))
@@ -505,19 +562,31 @@ def edit_leftover(leftover_id):
         if quantity <= 0:
             flash('Quantity must be greater than zero.', 'danger')
             return redirect(url_for('leftovers'))
-        datetime.strptime(date_prepared, '%Y-%m-%d')
-        datetime.strptime(consume_before, '%Y-%m-%d')
+        prep_dt = datetime.strptime(date_prepared, '%Y-%m-%d')
+        consume_dt = datetime.strptime(consume_before, '%Y-%m-%d')
+        if consume_dt < prep_dt:
+            flash('Target consume-before date cannot be earlier than the preparation date.', 'danger')
+            return redirect(url_for('leftovers'))
     except ValueError:
         flash('Invalid input entered.', 'danger')
         return redirect(url_for('leftovers'))
 
     db = get_db()
-    db.execute("""
-        UPDATE leftovers
-        SET food_name = ?, quantity = ?, unit = ?, date_prepared = ?, storage_method = ?, consume_before = ?, notes = ?
-        WHERE id = ?
-    """, (food_name, quantity, unit, date_prepared, storage_method, consume_before, notes, leftover_id))
-    db.commit()
+    existing = db.execute("SELECT id FROM leftovers WHERE id = ?", (leftover_id,)).fetchone()
+    if not existing:
+        flash('Leftover record not found. It may have already been removed.', 'danger')
+        return redirect(url_for('leftovers'))
+
+    try:
+        db.execute("""
+            UPDATE leftovers
+            SET food_name = ?, quantity = ?, unit = ?, date_prepared = ?, storage_method = ?, consume_before = ?, notes = ?
+            WHERE id = ?
+        """, (food_name, quantity, unit, date_prepared, storage_method, consume_before, notes, leftover_id))
+        db.commit()
+    except Exception:
+        flash('An error occurred while updating the leftover record. Please try again.', 'danger')
+        return redirect(url_for('leftovers'))
 
     flash(f'Leftover record "{food_name}" updated.', 'success')
     return redirect(url_for('leftovers'))
@@ -571,6 +640,13 @@ def waste_tracking():
     top_category = waste_by_category[0]['category'] if waste_by_category else None
 
     today_str = date.today().strftime('%Y-%m-%d')
+
+    # Active inventory items for optional linking in the add waste form
+    inventory_rows = db.execute(
+        "SELECT id, name, category, quantity, unit FROM food_items WHERE status = 'active' ORDER BY name ASC"
+    ).fetchall()
+    active_inventory = [dict(r) for r in inventory_rows]
+
     return render_template(
         'waste_tracking.html',
         active_page='waste_tracking',
@@ -580,7 +656,8 @@ def waste_tracking():
         top_category=top_category,
         waste_by_category=[dict(r) for r in waste_by_category],
         waste_by_reason=[dict(r) for r in waste_by_reason],
-        today_date=today_str
+        today_date=today_str,
+        active_inventory=active_inventory
     )
 
 @app.route('/waste-tracking/add', methods=['POST'])
@@ -593,6 +670,7 @@ def add_waste():
     reason = request.form.get('reason', '').strip()
     estimated_val_str = request.form.get('estimated_value', '0').strip()
     remarks = request.form.get('remarks', '').strip()
+    food_item_id_str = request.form.get('food_item_id', '').strip()
 
     if not food_item or not category or not quantity_str or not unit or not waste_date or not reason:
         flash('Please fill in all mandatory waste record fields.', 'danger')
@@ -609,11 +687,33 @@ def add_waste():
         flash('Invalid numeric value or date entered.', 'danger')
         return redirect(url_for('waste_tracking'))
 
+    # Resolve food_item_id: use explicit field, or try to match by name
+    food_item_id = None
+    if food_item_id_str:
+        try:
+            food_item_id = int(food_item_id_str)
+        except ValueError:
+            pass
+    if not food_item_id:
+        # Try to match an active inventory item by name (case-insensitive)
+        db_check = get_db()
+        match = db_check.execute(
+            "SELECT id FROM food_items WHERE LOWER(name) = LOWER(?) AND status = 'active' LIMIT 1",
+            (food_item,)
+        ).fetchone()
+        if match:
+            food_item_id = match['id']
+
     db = get_db()
     db.execute("""
-        INSERT INTO waste_records (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks))
+        INSERT INTO waste_records (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks, food_item_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks, food_item_id))
+
+    # Mark linked inventory item as discarded so it no longer appears in active views
+    if food_item_id:
+        db.execute("UPDATE food_items SET status = 'discarded' WHERE id = ?", (food_item_id,))
+
     db.commit()
 
     flash(f'Waste record for "{food_item}" logged successfully.', 'success')
@@ -646,12 +746,21 @@ def edit_waste(waste_id):
         return redirect(url_for('waste_tracking'))
 
     db = get_db()
-    db.execute("""
-        UPDATE waste_records
-        SET food_item = ?, category = ?, quantity_wasted = ?, unit = ?, waste_date = ?, reason = ?, estimated_value = ?, remarks = ?
-        WHERE id = ?
-    """, (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks, waste_id))
-    db.commit()
+    existing = db.execute("SELECT id FROM waste_records WHERE id = ?", (waste_id,)).fetchone()
+    if not existing:
+        flash('Waste record not found. It may have already been deleted.', 'danger')
+        return redirect(url_for('waste_tracking'))
+
+    try:
+        db.execute("""
+            UPDATE waste_records
+            SET food_item = ?, category = ?, quantity_wasted = ?, unit = ?, waste_date = ?, reason = ?, estimated_value = ?, remarks = ?
+            WHERE id = ?
+        """, (food_item, category, quantity_wasted, unit, waste_date, reason, estimated_value, remarks, waste_id))
+        db.commit()
+    except Exception:
+        flash('An error occurred while updating the waste record. Please try again.', 'danger')
+        return redirect(url_for('waste_tracking'))
 
     flash(f'Waste record "{food_item}" updated.', 'success')
     return redirect(url_for('waste_tracking'))

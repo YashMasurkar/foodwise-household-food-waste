@@ -67,7 +67,7 @@
                             <th>Meal / Dish Name</th>
                             <th>Key Ingredients</th>
                             <th>Notes</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end text-nowrap" style="min-width: 95px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,15 +85,17 @@
                             <td><strong class="fs-6">{{ meal.meal_name }}</strong></td>
                             <td><span class="text-secondary small">{{ meal.ingredients }}</span></td>
                             <td class="small text-muted">{{ meal.notes or '—' }}</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openEditMealModal({{ meal|tojson }})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form method="POST" action="{{ url_for('delete_meal', meal_id=meal.id) }}" class="d-inline" onsubmit="return confirm('Delete this planned meal?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
+                            <td class="text-end text-nowrap">
+                                <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Edit" onclick='openEditMealModal({{ meal|tojson }})'>
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                </form>
+                                    <form method="POST" action="{{ url_for('delete_meal', meal_id=meal.id) }}" class="m-0 p-0 d-inline-block" onsubmit="return confirm('Delete this planned meal?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -146,8 +148,55 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="mealIngredients">Key Ingredients <span class="text-danger">*</span></label>
-                        <textarea name="ingredients" id="mealIngredients" rows="2" class="form-control" placeholder="e.g., Rice, Tomatoes, Onions, Peas" required></textarea>
+                        <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                            <span>Key Ingredients <span class="text-danger">*</span></span>
+                            {% if inventory_items %}
+                            <span class="badge bg-light text-muted border fw-normal" id="addSelectedBadge">0 selected</span>
+                            {% endif %}
+                        </label>
+                        {% if inventory_items %}
+                        <div class="border rounded-3 p-2 bg-light-subtle meal-ingredients-scroll-box" style="max-height: 200px; overflow-y: auto;">
+                            {% for fi in inventory_items %}
+                            <div class="form-check p-2 mb-1 rounded border bg-white shadow-sm d-flex align-items-center gap-2 ingredient-item-row" style="cursor: pointer;">
+                                <input class="form-check-input mt-0 add-meal-ingredient-cb flex-shrink-0" type="checkbox" 
+                                       value="{{ fi.name }}" id="add_ing_{{ fi.id }}" data-id="{{ fi.id }}" data-name="{{ fi.name }}" style="cursor: pointer;">
+                                <label class="form-check-label w-100 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-1" for="add_ing_{{ fi.id }}" style="cursor: pointer;">
+                                    <div>
+                                        <strong class="text-dark">{{ fi.name }}</strong>
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1">{{ fi.category }}</span>
+                                    </div>
+                                    <div class="small text-muted d-flex align-items-center gap-2">
+                                        <span>{{ fi.quantity }} {{ fi.unit }}</span>
+                                        {% if fi.status_label == 'Expired' %}
+                                            <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Expired</span>
+                                        {% elif fi.status_label == 'Expiring Today' %}
+                                            <span class="badge bg-warning-subtle text-dark"><i class="bi bi-exclamation-circle me-1"></i>Today</span>
+                                        {% elif fi.status_label == 'Expiring Soon' %}
+                                            <span class="badge bg-warning-subtle text-dark"><i class="bi bi-clock-history me-1"></i>In {{ fi.days_left }}d</span>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Fresh</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="ingredients" id="mealIngredientsHidden">
+                        <small class="text-muted d-block mt-1">
+                            <i class="bi bi-info-circle me-1"></i> Tap or click any item to select it. Multiple ingredients can be chosen freely.
+                        </small>
+                        {% else %}
+                        <div class="alert alert-warning py-3 mb-0">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle fs-4 text-warning"></i>
+                                <div>
+                                    <strong>No inventory items found!</strong><br>
+                                    Please <a href="{{ url_for('inventory') }}" class="alert-link">add food items to your inventory</a> before creating a meal plan.
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="ingredients" id="mealIngredientsHidden" value="">
+                        {% endif %}
                     </div>
                     <div class="mb-2">
                         <label class="form-label" for="mealNotes">Notes</label>
@@ -193,8 +242,55 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="editMealIngredients">Key Ingredients <span class="text-danger">*</span></label>
-                        <textarea name="ingredients" id="editMealIngredients" rows="2" class="form-control" required></textarea>
+                        <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                            <span>Key Ingredients <span class="text-danger">*</span></span>
+                            {% if inventory_items %}
+                            <span class="badge bg-light text-muted border fw-normal" id="editSelectedBadge">0 selected</span>
+                            {% endif %}
+                        </label>
+                        {% if inventory_items %}
+                        <div class="border rounded-3 p-2 bg-light-subtle meal-ingredients-scroll-box" style="max-height: 200px; overflow-y: auto;">
+                            {% for fi in inventory_items %}
+                            <div class="form-check p-2 mb-1 rounded border bg-white shadow-sm d-flex align-items-center gap-2 ingredient-item-row" style="cursor: pointer;">
+                                <input class="form-check-input mt-0 edit-meal-ingredient-cb flex-shrink-0" type="checkbox" 
+                                       value="{{ fi.name }}" id="edit_ing_{{ fi.id }}" data-id="{{ fi.id }}" data-name="{{ fi.name }}" style="cursor: pointer;">
+                                <label class="form-check-label w-100 mb-0 d-flex flex-wrap justify-content-between align-items-center gap-1" for="edit_ing_{{ fi.id }}" style="cursor: pointer;">
+                                    <div>
+                                        <strong class="text-dark">{{ fi.name }}</strong>
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1">{{ fi.category }}</span>
+                                    </div>
+                                    <div class="small text-muted d-flex align-items-center gap-2">
+                                        <span>{{ fi.quantity }} {{ fi.unit }}</span>
+                                        {% if fi.status_label == 'Expired' %}
+                                            <span class="badge bg-danger-subtle text-danger"><i class="bi bi-x-circle me-1"></i>Expired</span>
+                                        {% elif fi.status_label == 'Expiring Today' %}
+                                            <span class="badge bg-warning-subtle text-dark"><i class="bi bi-exclamation-circle me-1"></i>Today</span>
+                                        {% elif fi.status_label == 'Expiring Soon' %}
+                                            <span class="badge bg-warning-subtle text-dark"><i class="bi bi-clock-history me-1"></i>In {{ fi.days_left }}d</span>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Fresh</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="ingredients" id="editMealIngredientsHidden">
+                        <small class="text-muted d-block mt-1">
+                            <i class="bi bi-info-circle me-1"></i> Tap or click any item to select it. Multiple ingredients can be chosen freely.
+                        </small>
+                        {% else %}
+                        <div class="alert alert-warning py-3 mb-0">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-triangle fs-4 text-warning"></i>
+                                <div>
+                                    <strong>No inventory items found!</strong><br>
+                                    Please <a href="{{ url_for('inventory') }}" class="alert-link">add food items to your inventory</a> first.
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="ingredients" id="editMealIngredientsHidden" value="">
+                        {% endif %}
                     </div>
                     <div class="mb-2">
                         <label class="form-label" for="editMealNotes">Notes</label>
@@ -213,15 +309,124 @@
 
 {% block extra_scripts %}
 <script>
+// Helper to sync checked checkboxes to hidden comma-separated input and update selected count badge
+function syncCheckboxIngredients(selector, hiddenId, badgeId) {
+    var cbs = document.querySelectorAll(selector + ':checked');
+    var values = [];
+    cbs.forEach(function(cb) {
+        values.push(cb.value);
+    });
+    var hidden = document.getElementById(hiddenId);
+    if (hidden) {
+        hidden.value = values.join(', ');
+    }
+    var badge = document.getElementById(badgeId);
+    if (badge) {
+        badge.textContent = values.length + ' selected';
+        if (values.length > 0) {
+            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold';
+        } else {
+            badge.className = 'badge bg-light text-muted border fw-normal';
+        }
+    }
+    return values;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add modal checkbox listeners
+    document.querySelectorAll('.add-meal-ingredient-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            syncCheckboxIngredients('.add-meal-ingredient-cb', 'mealIngredientsHidden', 'addSelectedBadge');
+        });
+    });
+
+    // Edit modal checkbox listeners
+    document.querySelectorAll('.edit-meal-ingredient-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            syncCheckboxIngredients('.edit-meal-ingredient-cb', 'editMealIngredientsHidden', 'editSelectedBadge');
+        });
+    });
+
+    // Row click listeners for both modals so entire container is tap-friendly
+    document.querySelectorAll('.ingredient-item-row').forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName.toLowerCase() === 'input' || e.target.closest('label')) {
+                return;
+            }
+            var cb = row.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    // Reset Add modal state when shown
+    var addModal = document.getElementById('addMealModal');
+    if (addModal) {
+        addModal.addEventListener('show.bs.modal', function() {
+            document.querySelectorAll('.add-meal-ingredient-cb').forEach(function(cb) {
+                cb.checked = false;
+            });
+            syncCheckboxIngredients('.add-meal-ingredient-cb', 'mealIngredientsHidden', 'addSelectedBadge');
+        });
+    }
+
+    // Validate Add form submission
+    var addForm = document.querySelector('#addMealModal form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            var selected = syncCheckboxIngredients('.add-meal-ingredient-cb', 'mealIngredientsHidden', 'addSelectedBadge');
+            if (selected.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one ingredient from your inventory.');
+                return false;
+            }
+        });
+    }
+
+    // Validate Edit form submission
+    var editForm = document.getElementById('editMealForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            var selected = syncCheckboxIngredients('.edit-meal-ingredient-cb', 'editMealIngredientsHidden', 'editSelectedBadge');
+            if (selected.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one ingredient from your inventory.');
+                return false;
+            }
+        });
+    }
+});
+
 function openEditMealModal(meal) {
-    document.getElementById('editMealForm').action = "/meal-planner/edit/" + meal.id;
+    document.getElementById('editMealForm').action = '/meal-planner/edit/' + meal.id;
     document.getElementById('editMealName').value = meal.meal_name;
     document.getElementById('editMealType').value = meal.meal_type;
     document.getElementById('editMealDate').value = meal.meal_date;
-    document.getElementById('editMealIngredients').value = meal.ingredients;
     document.getElementById('editMealNotes').value = meal.notes || '';
 
-    const modal = new bootstrap.Modal(document.getElementById('editMealModal'));
+    // Split stored ingredients into clean lowercase tokens
+    var storedNames = (meal.ingredients || '')
+        .split(',')
+        .map(function(s) { return s.trim().toLowerCase(); })
+        .filter(function(s) { return s.length > 0; });
+
+    // Pre-check checkboxes that match stored names or IDs
+    var editCbs = document.querySelectorAll('.edit-meal-ingredient-cb');
+    editCbs.forEach(function(cb) {
+        var val = cb.value.trim().toLowerCase();
+        var idVal = (cb.getAttribute('data-id') || '').trim().toLowerCase();
+        var isMatch = storedNames.some(function(name) {
+            return name === val || (idVal && name === idVal) || (name.length > 2 && val.indexOf(name) !== -1);
+        });
+        cb.checked = isMatch;
+    });
+
+    // Immediately sync hidden input and badge to reflect loaded selection
+    syncCheckboxIngredients('.edit-meal-ingredient-cb', 'editMealIngredientsHidden', 'editSelectedBadge');
+
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editMealModal'));
     modal.show();
 }
 </script>
